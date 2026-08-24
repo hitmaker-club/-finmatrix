@@ -1,0 +1,6 @@
+{
+  "name": "Fin Matrix",
+  "description": "Fin Matrix — диагностический расчёт 4 векторов финансовой матрицы и ИИ-анализ поведенческих паттернов капитала.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
