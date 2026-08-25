@@ -45,11 +45,11 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     bashkuev: 'Духовники',
     orientation: 'process',
     leading: 'ЧИ',
-    creative: 'БЛ',
-    role: 'ЧС',
-    painful: 'БЭ',
-    descriptionRu: 'Генератор концептуальных идей, визионер возможностей и исследователь фундаментальных законов.',
-    descriptionEn: 'Visionary concept generator, possibility explorer, and fundamental systems theorist.',
+    creative: 'ЧЛ',
+    role: 'БЭ',
+    painful: 'БС',
+    descriptionRu: 'Генератор концептуальных идей, визионер возможностей.',
+    descriptionEn: 'Visionary concept generator, possibility explorer.',
   },
   ЛИИ: {
     code: 'ЛИИ',
@@ -62,10 +62,10 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БЛ',
     creative: 'ЧИ',
-    role: 'БЭ',
-    painful: 'ЧС',
-    descriptionRu: 'Архитектор строгих систем, объективной логики, справедливости и концептуальной ясности.',
-    descriptionEn: 'Architect of rigorous structural models, objective logic, justice, and clarity.',
+    role: 'БС',
+    painful: 'ЧЭ',
+    descriptionRu: 'Архитектор строгих систем, объективной логики.',
+    descriptionEn: 'Architect of rigorous structural models, objective logic.',
   },
   ЭСЭ: {
     code: 'ЭСЭ',
@@ -78,10 +78,10 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'process',
     leading: 'ЧЭ',
     creative: 'БС',
-    role: 'ЧЛ',
-    painful: 'БИ',
-    descriptionRu: 'Мастер эмоционального воодушевления, праздничной энергии, гостеприимства и уюта.',
-    descriptionEn: 'Master of uplifting emotional resonance, festive energy, hospitality, and comfort.',
+    role: 'ЧИ',
+    painful: 'БЛ',
+    descriptionRu: 'Мастер эмоционального воодушевления и уюта.',
+    descriptionEn: 'Master of uplifting emotional resonance and comfort.',
   },
   СЭИ: {
     code: 'СЭИ',
@@ -94,11 +94,12 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БС',
     creative: 'ЧЭ',
-    role: 'БИ',
-    painful: 'ЧЛ',
-    descriptionRu: 'Творец физической гармонии, гедонистического комфорта, тепла и душевного спокойствия.',
-    descriptionEn: 'Creator of physical harmony, sensory delight, interpersonal warmth, and serenity.',
+    role: 'БЛ',
+    painful: 'ЧИ',
+    descriptionRu: 'Творец физической гармонии и душевного спокойствия.',
+    descriptionEn: 'Creator of physical harmony and interpersonal warmth.',
   },
+
   СЛЭ: {
     code: 'СЛЭ',
     nameRu: 'Маршал (Жуков)',
@@ -109,11 +110,11 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     bashkuev: 'Аристократы',
     orientation: 'process',
     leading: 'ЧС',
-    creative: 'БИ',
-    role: 'БЛ',
-    painful: 'БЭ',
-    descriptionRu: 'Волевой стратег захвата пространства, преодоления кризисов, управления властью и ресурсами.',
-    descriptionEn: 'Resolute commander of expansion, crisis management, tactical leverage, and power.',
+    creative: 'БЛ',
+    role: 'ЧЭ',
+    painful: 'БИ',
+    descriptionRu: 'Волевой стратег захвата пространства и управления ресурсами.',
+    descriptionEn: 'Resolute commander of expansion and tactical leverage.',
   },
   ИЭИ: {
     code: 'ИЭИ',
@@ -128,8 +129,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     creative: 'ЧЭ',
     role: 'БС',
     painful: 'ЧЛ',
-    descriptionRu: 'Интуитивный провидец временных ритмов, тонких душевных состояний и романтических смыслов.',
-    descriptionEn: 'Visionary of temporal currents, delicate emotional subtleties, and inspirational faith.',
+    descriptionRu: 'Провидец временных ритмов и тонких душевных состояний.',
+    descriptionEn: 'Visionary of temporal currents and emotional subtleties.',
   },
   ЛСИ: {
     code: 'ЛСИ',
@@ -142,10 +143,10 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'process',
     leading: 'БЛ',
     creative: 'ЧС',
-    role: 'ЧИ',
-    painful: 'ЧЭ',
-    descriptionRu: 'Хранитель дисциплины, регламентов, иерархического порядка и структурной надежности.',
-    descriptionEn: 'Guardian of ironclad discipline, regulations, hierarchical structure, and execution.',
+    role: 'БЭ',
+    painful: 'БИ',
+    descriptionRu: 'Хранитель дисциплины, регламентов и структурной надежности.',
+    descriptionEn: 'Guardian of ironclad discipline and hierarchical structure.',
   },
   ЭИЭ: {
     code: 'ЭИЭ',
@@ -160,12 +161,13 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     creative: 'БИ',
     role: 'ЧС',
     painful: 'БС',
-    descriptionRu: 'Драматический лидер, идеолог больших движений, трансформатор ценностей и духа коллектива.',
-    descriptionEn: 'Charismatic ideologue, dramatic mobilizer of collective destiny, and cultural leader.',
+    descriptionRu: 'Драматический лидер и трансформатор духа коллектива.',
+    descriptionEn: 'Charismatic ideologue and dramatic mobilizer.',
   },
+
   СЭЭ: {
     code: 'СЭЭ',
-    nameRu: 'Политик (Цезарь / Наполеон)',
+    nameRu: 'Политик (Наполеон)',
     nameEn: 'Ambassador (ESFp)',
     aliasRu: 'Сенсорно-этический экстраверт',
     aliasEn: 'Sensory Ethical Extravert',
@@ -175,9 +177,9 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     leading: 'ЧС',
     creative: 'ЧЛ',
     role: 'БЭ',
-    painful: 'БЛ',
-    descriptionRu: 'Лидер личного влияния, дипломатического маневра, масштабных амбиций и престижа.',
-    descriptionEn: 'Dynamic leader of personal leverage, social maneuvering, prestige, and market presence.',
+    painful: 'БИ',
+    descriptionRu: 'Лидер личного влияния, дипломатического маневра и престижа.',
+    descriptionEn: 'Dynamic leader of personal leverage and social maneuvering.',
   },
   ИЛИ: {
     code: 'ИЛИ',
@@ -192,8 +194,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     creative: 'ЧЛ',
     role: 'БС',
     painful: 'ЧЭ',
-    descriptionRu: 'Стратегический прогнозист, мастер оценки рисков, экономности ресурсов и своевременности.',
-    descriptionEn: 'Strategic forecaster, master of risk evaluation, capital conservation, and timing.',
+    descriptionRu: 'Стратегический прогнозист и мастер оценки рисков.',
+    descriptionEn: 'Strategic forecaster and master of risk evaluation.',
   },
   ЛИЭ: {
     code: 'ЛИЭ',
@@ -208,8 +210,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     creative: 'БИ',
     role: 'ЧЭ',
     painful: 'БС',
-    descriptionRu: 'Пионер бизнес-инноваций, оптимизатор прибыльности, динамичный строитель капитала.',
-    descriptionEn: 'Pioneer of business innovation, velocity of capital, dynamic enterprise, and ROI.',
+    descriptionRu: 'Пионер бизнес-инноваций и динамичный строитель капитала.',
+    descriptionEn: 'Pioneer of business innovation and dynamic enterprise.',
   },
   ЭСИ: {
     code: 'ЭСИ',
@@ -222,11 +224,12 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БЭ',
     creative: 'ЧС',
-    role: 'ЧИ',
+    role: 'БИ',
     painful: 'ЧЛ',
-    descriptionRu: 'Защитник этических принципов, верности договоренностям, семейных активов и границ.',
-    descriptionEn: 'Protector of ethical standards, contractual loyalty, family assets, and moral boundaries.',
+    descriptionRu: 'Защитник этических принципов и верности договоренностям.',
+    descriptionEn: 'Protector of ethical standards and contractual loyalty.',
   },
+
   ЛСЭ: {
     code: 'ЛСЭ',
     nameRu: 'Администратор (Штирлиц)',
@@ -240,8 +243,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     creative: 'БС',
     role: 'ЧЭ',
     painful: 'БИ',
-    descriptionRu: 'Организатор безупречного производственного качества, высокой культуры труда и надежности.',
-    descriptionEn: 'Master of operational excellence, premium production standards, work culture, and quality.',
+    descriptionRu: 'Организатор производственного качества и надежности.',
+    descriptionEn: 'Master of operational excellence and work culture.',
   },
   СЛИ: {
     code: 'СЛИ',
@@ -254,10 +257,10 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БС',
     creative: 'ЧЛ',
-    role: 'ЧЭ',
-    painful: 'ЧИ',
-    descriptionRu: 'Виртуоз прикладного мастерства, эргономики, технологической точности и сбережения сил.',
-    descriptionEn: 'Virtuoso of practical craftsmanship, ergonomic mastery, technological precision, and ease.',
+    role: 'БИ',
+    painful: 'ЧЭ',
+    descriptionRu: 'Виртуоз прикладного мастерства и технологической точности.',
+    descriptionEn: 'Virtuoso of practical craftsmanship and technological precision.',
   },
   ИЭЭ: {
     code: 'ИЭЭ',
@@ -270,10 +273,10 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'process',
     leading: 'ЧИ',
     creative: 'БЭ',
-    role: 'ЧС',
-    painful: 'БЛ',
-    descriptionRu: 'Катализатор талантов людей, вдохновляющий дипломат возможностей и гуманистических связей.',
-    descriptionEn: 'Catalyst of human potential, intuitive connector of opportunities, and empathetic diplomat.',
+    role: 'БС',
+    painful: 'ЧЛ',
+    descriptionRu: 'Катализатор талантов и вдохновляющий дипломат.',
+    descriptionEn: 'Catalyst of human potential and empathetic diplomat.',
   },
   ЭИИ: {
     code: 'ЭИИ',
@@ -288,8 +291,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     creative: 'ЧИ',
     role: 'БС',
     painful: 'ЧС',
-    descriptionRu: 'Носитель глубокой нравственной мудрости, психологического исцеления и духовного развития.',
-    descriptionEn: 'Bearer of profound moral wisdom, psychological healing, and quiet spiritual guidance.',
+    descriptionRu: 'Носитель нравственной мудрости и психологического исцеления.',
+    descriptionEn: 'Bearer of profound moral wisdom and spiritual guidance.',
   },
 };
 
@@ -406,18 +409,24 @@ export function evaluateSocionicsTest(
   const top3 = sortedFunctions.slice(0, 3);
   const bottom3 = sortedFunctions.slice(-3).reverse();
 
-  // Score each of 16 sociotypes based strictly on Model A formula:
-  // Score(T) = 1.0 * F_norm(Leading) + 0.8 * F_norm(Creative) + 0.3 * F_norm(Role) + 0.0 * F_norm(Painful)
-  // (No artificial orientation bonus - orientation is determined separately)
+  // Score each of 16 sociotypes based strictly on Model A formula WITH PENALTY
   const sociotypeScores: Array<{ code: SociotypeCode; score: number }> = [];
+
+  // Получаем названия Топ-3 функций пользователя для проверки
+  const top3FunctionNames = sortedFunctions.slice(0, 3).map((f) => f.func);
 
   for (const meta of Object.values(SOCIOTYPES_META)) {
     const leadScore = normalizedFunctions[meta.leading] || 0;
     const creatScore = normalizedFunctions[meta.creative] || 0;
     const roleScore = normalizedFunctions[meta.role] || 0;
-    const painfulScore = normalizedFunctions[meta.painful] || 0;
 
-    const typeScore = 1.0 * leadScore + 0.8 * creatScore + 0.3 * roleScore + 0.0 * painfulScore;
+    // ШТРАФ ЗА БОЛЕВУЮ ФУНКЦИЮ (Согласно ТЗ)
+    let vulnerablePenalty = 0;
+    if (top3FunctionNames.includes(meta.painful)) {
+      vulnerablePenalty = 15; // Вычитаем 15 баллов, если болевая функция в Топ-3
+    }
+
+    const typeScore = 1.0 * leadScore + 0.8 * creatScore + 0.3 * roleScore - vulnerablePenalty;
     sociotypeScores.push({ code: meta.code, score: Math.round(typeScore * 10) / 10 });
   }
 
