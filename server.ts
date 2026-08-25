@@ -14,6 +14,7 @@ import { getAccountFromToken, canAccess, verifyProfileAccess } from './server/se
 import { computeFinancialMatrix, ALGORITHM_VERSION } from './server/engine/math.js';
 import { generateLayer2Analysis, PROMPT_VERSION } from './server/engine/ai.js';
 import { SOCIONICS_SCREENS } from './server/engine/socionics_data.js';
+import { ENERGY_EFFICIENCY_SCREENS, evaluateEnergyEfficiency } from './server/engine/energy_efficiency_data.js';
 import { evaluateSocionicsTest } from './server/engine/socionics_engine.js';
 import { generateIntegrativeAnalysis } from './server/engine/integrative_ai.js';
 import { runAutomatedDiagnosticsTestSuite } from './server/engine/tests.js';
@@ -412,7 +413,7 @@ app.delete('/api/diagnostics/history/:id', authenticate, (req: Request, res: Res
 });
 
 // ==========================================
-// 3.1 SOCIONICS DIAGNOSTIC MODULE
+// 3.1 SOCIONICS & ENERGY DIAGNOSTIC MODULE
 // ==========================================
 
 // Get all 30 psychometric screens (multilingual)
@@ -420,15 +421,55 @@ app.get('/api/diagnostics/socionics/screens', (req: Request, res: Response) => {
   res.json({ screens: SOCIONICS_SCREENS });
 });
 
+// Get all 7 psychophysiological energy efficiency screens
+app.get('/api/diagnostics/energy/screens', (req: Request, res: Response) => {
+  res.json({ screens: ENERGY_EFFICIENCY_SCREENS });
+});
+
+// Evaluate stand-alone energy efficiency diagnostics (7 screens)
+app.post('/api/diagnostics/energy/evaluate', optionalAuthenticate, (req: Request, res: Response) => {
+  const { answers, profileId, profileName } = req.body;
+  if (!answers || typeof answers !== 'object') {
+    return res.status(400).json({ error: 'Answers dictionary is required (keys 1..7 with values A..E).' });
+  }
+
+  try {
+    const result = evaluateEnergyEfficiency(answers);
+    const resultPayload = {
+      id: `energy_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      completedAt: new Date().toISOString(),
+      profileId,
+      profileName,
+      answers,
+      diagnostics: result,
+    };
+
+    const account = (req as any).account;
+    if (account && profileId) {
+      const existingProfile = db.profiles.get(profileId);
+      if (existingProfile) {
+        existingProfile.notes = (existingProfile.notes || '') + `\n[Energy КПД: ${result.kpd}, Кластер: ${result.dominantCluster}]`;
+        db.profiles.set(profileId, existingProfile);
+      }
+    }
+
+    logger.info('Diagnostic', `Evaluated energy state: КПД ${result.kpd} (${result.dominantCluster} - ${result.scenario})`);
+    res.json({ result: resultPayload });
+  } catch (err: any) {
+    logger.error('Diagnostic', `Energy evaluation failed: ${err.message}`);
+    res.status(500).json({ error: `Energy evaluation failed: ${err.message}` });
+  }
+});
+
 // Evaluate submitted answers
 app.post('/api/diagnostics/socionics/evaluate', optionalAuthenticate, (req: Request, res: Response) => {
-  const { answers, profileId, profileName } = req.body;
+  const { answers, energyAnswers, profileId, profileName } = req.body;
   if (!answers || typeof answers !== 'object') {
     return res.status(400).json({ error: 'Answers dictionary is required (keys 1..30 with values A..E).' });
   }
 
   try {
-    const result = evaluateSocionicsTest(answers);
+    const result = evaluateSocionicsTest(answers, energyAnswers);
     if (profileId) {
       result.profileId = profileId;
     }
@@ -493,6 +534,7 @@ app.post('/api/diagnostics/integrative/analyze', optionalAuthenticate, async (re
     fatherBirthDate,
     socionicsResultId,
     socionicsAnswers,
+    energyAnswers,
     lang,
   } = req.body;
 
@@ -528,7 +570,7 @@ app.post('/api/diagnostics/integrative/analyze', optionalAuthenticate, async (re
     if (socionicsResultId && db.socionicsResults.has(socionicsResultId)) {
       socResult = db.socionicsResults.get(socionicsResultId);
     } else if (socionicsAnswers && typeof socionicsAnswers === 'object') {
-      socResult = evaluateSocionicsTest(socionicsAnswers);
+      socResult = evaluateSocionicsTest(socionicsAnswers, energyAnswers);
       socResult.profileName = finalProfileName;
       if (account) db.socionicsResults.set(socResult.id, { ...socResult, accountId: account.id });
     } else {
@@ -537,7 +579,7 @@ app.post('/api/diagnostics/integrative/analyze', optionalAuthenticate, async (re
         1: 'A', 2: 'B', 3: 'A', 4: 'C', 5: 'A', 6: 'C', 7: 'A', 8: 'A', 9: 'A', 10: 'C',
         11: 'A', 12: 'A', 13: 'A', 14: 'A', 15: 'A', 16: 'A', 17: 'A', 18: 'A', 19: 'A', 20: 'A',
         21: 'A', 22: 'A', 23: 'A', 24: 'A', 25: 'A', 26: 'A', 27: 'A', 28: 'A', 29: 'A', 30: 'A',
-      });
+      }, energyAnswers);
       socResult.profileName = finalProfileName;
     }
 

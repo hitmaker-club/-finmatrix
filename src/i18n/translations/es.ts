@@ -54,6 +54,7 @@ export const es: TranslationDictionary = {
     historyCalculations: 'Historial de Cálculos',
     diagnosticTypes: 'Tipos de Diagnóstico',
     socionics: 'Sociónica',
+    energy: 'Estado de Recursos (КПД)',
     integrativeReport: 'Análisis Integrativo',
   },
   form: {
@@ -540,5 +541,12 @@ export const es: TranslationDictionary = {
     runNewIntegration: 'Ejecutar Nuevo Análisis Integrativo',
     historyTitle: 'Historial de Informes Integrativos',
     noReportsYet: 'Aún no se han generado informes integrativos.',
+  },
+  energy: {
+    badge: 'GATEKEEPER: DIAGNÓSTICO DEL ESTADO DE RECURSOS',
+    title: 'Evaluación del Recurso Psicofisiológico y КПД',
+    subtitle: '7 marcadores de comportamiento precisos (E-1 a E-7) para evaluar el tono somático, nivel de estrés, balance de gasto/recuperación y protocolos de neurorregulación.',
+    stepProgress: 'Marcador',
+    btnCalculate: 'Calcular КПД y Protocolo',
   },
 };

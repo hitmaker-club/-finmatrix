@@ -54,6 +54,7 @@ export const en: TranslationDictionary = {
     historyCalculations: 'Calculation History',
     diagnosticTypes: 'Diagnostic Types',
     socionics: 'Socionics',
+    energy: 'Energy State (КПД)',
     integrativeReport: 'Integrative Analysis',
   },
   form: {
@@ -540,5 +541,12 @@ export const en: TranslationDictionary = {
     runNewIntegration: 'Run New Integrative Analysis',
     historyTitle: 'Integrative Report History',
     noReportsYet: 'No integrative reports generated yet.',
+  },
+  energy: {
+    badge: 'GATEKEEPER: RESOURCE STATE & VITALITY DIAGNOSTIC',
+    title: 'Psychophysiological Resource & Efficiency Index (КПД)',
+    subtitle: '7 precise behavioral markers (E-1 to E-7) measuring somatic vitality, allostatic load, energy inflow/outflow balance, and evidence-based neuro-regulation protocols.',
+    stepProgress: 'Marker',
+    btnCalculate: 'Calculate КПД & Protocol',
   },
 };

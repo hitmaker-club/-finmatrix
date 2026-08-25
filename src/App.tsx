@@ -25,6 +25,7 @@ import { AuthModal } from './components/AuthModal.js';
 import { PwaInstallModal } from './components/PwaInstallModal.js';
 import { PwaInstallBanner } from './components/PwaInstallBanner.js';
 import { SocionicsTestView } from './components/SocionicsTestView.js';
+import { ResourceStateView } from './components/ResourceStateView.js';
 import { IntegrativeAnalysisView } from './components/IntegrativeAnalysisView.js';
 import { SocionicsTestResult, FullIntegrativeAnalysisRecord } from './types/socionics.js';
 import { useI18n } from './i18n/context.js';
@@ -471,7 +472,18 @@ export function App() {
         {/* Tab 6: RBAC Admin Console */}
         {currentTab === 'admin' && account?.role === 'ADMIN' && <AdminConsole />}
 
-        {/* Tab 7: Socionics Diagnostic Battery */}
+        {/* Tab 7: Resource State (Energy & Psychophysiology) */}
+        {(currentTab === 'energy' || currentTab === 'resource') && (
+          <ResourceStateView
+            activeProfile={selectedProfile}
+            profiles={profiles}
+            onSelectProfile={(p) => setSelectedProfile(p)}
+            onNavigateToSocionics={() => setCurrentTab('socionics')}
+            onNavigateToMatrix={() => setCurrentTab('diagnostic')}
+          />
+        )}
+
+        {/* Tab 8: Socionics Diagnostic Battery */}
         {currentTab === 'socionics' && (
           <div className="space-y-6">
             {isGeneratingIntegrative && (

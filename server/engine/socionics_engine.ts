@@ -12,8 +12,10 @@ import {
   SociotypeCode,
   SocionicsContradiction,
   SocionicsTestResult,
+  EnergyDiagnosticsResult,
 } from '../../src/types/socionics.js';
 import { SOCIONICS_DIAGNOSTIC_WEIGHTS, SOCIONICS_SCREENS } from './socionics_data.js';
+import { evaluateEnergyEfficiency } from './energy_efficiency_data.js';
 
 export interface SociotypeMeta {
   code: SociotypeCode;
@@ -26,6 +28,8 @@ export interface SociotypeMeta {
   orientation: 'result' | 'process';
   leading: CognitiveFunction;
   creative: CognitiveFunction;
+  role: CognitiveFunction;
+  painful: CognitiveFunction;
   descriptionRu: string;
   descriptionEn: string;
 }
@@ -42,6 +46,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'process',
     leading: 'ЧИ',
     creative: 'БЛ',
+    role: 'ЧС',
+    painful: 'БЭ',
     descriptionRu: 'Генератор концептуальных идей, визионер возможностей и исследователь фундаментальных законов.',
     descriptionEn: 'Visionary concept generator, possibility explorer, and fundamental systems theorist.',
   },
@@ -56,6 +62,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БЛ',
     creative: 'ЧИ',
+    role: 'БЭ',
+    painful: 'ЧС',
     descriptionRu: 'Архитектор строгих систем, объективной логики, справедливости и концептуальной ясности.',
     descriptionEn: 'Architect of rigorous structural models, objective logic, justice, and clarity.',
   },
@@ -70,6 +78,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'process',
     leading: 'ЧЭ',
     creative: 'БС',
+    role: 'ЧЛ',
+    painful: 'БИ',
     descriptionRu: 'Мастер эмоционального воодушевления, праздничной энергии, гостеприимства и уюта.',
     descriptionEn: 'Master of uplifting emotional resonance, festive energy, hospitality, and comfort.',
   },
@@ -84,6 +94,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БС',
     creative: 'ЧЭ',
+    role: 'БИ',
+    painful: 'ЧЛ',
     descriptionRu: 'Творец физической гармонии, гедонистического комфорта, тепла и душевного спокойствия.',
     descriptionEn: 'Creator of physical harmony, sensory delight, interpersonal warmth, and serenity.',
   },
@@ -97,7 +109,9 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     bashkuev: 'Аристократы',
     orientation: 'process',
     leading: 'ЧС',
-    creative: 'БЛ',
+    creative: 'БИ',
+    role: 'БЛ',
+    painful: 'БЭ',
     descriptionRu: 'Волевой стратег захвата пространства, преодоления кризисов, управления властью и ресурсами.',
     descriptionEn: 'Resolute commander of expansion, crisis management, tactical leverage, and power.',
   },
@@ -112,6 +126,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БИ',
     creative: 'ЧЭ',
+    role: 'БС',
+    painful: 'ЧЛ',
     descriptionRu: 'Интуитивный провидец временных ритмов, тонких душевных состояний и романтических смыслов.',
     descriptionEn: 'Visionary of temporal currents, delicate emotional subtleties, and inspirational faith.',
   },
@@ -126,6 +142,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'process',
     leading: 'БЛ',
     creative: 'ЧС',
+    role: 'ЧИ',
+    painful: 'ЧЭ',
     descriptionRu: 'Хранитель дисциплины, регламентов, иерархического порядка и структурной надежности.',
     descriptionEn: 'Guardian of ironclad discipline, regulations, hierarchical structure, and execution.',
   },
@@ -140,6 +158,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'ЧЭ',
     creative: 'БИ',
+    role: 'ЧС',
+    painful: 'БС',
     descriptionRu: 'Драматический лидер, идеолог больших движений, трансформатор ценностей и духа коллектива.',
     descriptionEn: 'Charismatic ideologue, dramatic mobilizer of collective destiny, and cultural leader.',
   },
@@ -153,7 +173,9 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     bashkuev: 'Купцы/Ремесленники',
     orientation: 'process',
     leading: 'ЧС',
-    creative: 'БЭ',
+    creative: 'ЧЛ',
+    role: 'БЭ',
+    painful: 'БЛ',
     descriptionRu: 'Лидер личного влияния, дипломатического маневра, масштабных амбиций и престижа.',
     descriptionEn: 'Dynamic leader of personal leverage, social maneuvering, prestige, and market presence.',
   },
@@ -168,6 +190,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БИ',
     creative: 'ЧЛ',
+    role: 'БС',
+    painful: 'ЧЭ',
     descriptionRu: 'Стратегический прогнозист, мастер оценки рисков, экономности ресурсов и своевременности.',
     descriptionEn: 'Strategic forecaster, master of risk evaluation, capital conservation, and timing.',
   },
@@ -182,6 +206,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'process',
     leading: 'ЧЛ',
     creative: 'БИ',
+    role: 'ЧЭ',
+    painful: 'БС',
     descriptionRu: 'Пионер бизнес-инноваций, оптимизатор прибыльности, динамичный строитель капитала.',
     descriptionEn: 'Pioneer of business innovation, velocity of capital, dynamic enterprise, and ROI.',
   },
@@ -196,6 +222,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БЭ',
     creative: 'ЧС',
+    role: 'ЧИ',
+    painful: 'ЧЛ',
     descriptionRu: 'Защитник этических принципов, верности договоренностям, семейных активов и границ.',
     descriptionEn: 'Protector of ethical standards, contractual loyalty, family assets, and moral boundaries.',
   },
@@ -210,6 +238,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'process',
     leading: 'ЧЛ',
     creative: 'БС',
+    role: 'ЧЭ',
+    painful: 'БИ',
     descriptionRu: 'Организатор безупречного производственного качества, высокой культуры труда и надежности.',
     descriptionEn: 'Master of operational excellence, premium production standards, work culture, and quality.',
   },
@@ -224,6 +254,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БС',
     creative: 'ЧЛ',
+    role: 'ЧЭ',
+    painful: 'ЧИ',
     descriptionRu: 'Виртуоз прикладного мастерства, эргономики, технологической точности и сбережения сил.',
     descriptionEn: 'Virtuoso of practical craftsmanship, ergonomic mastery, technological precision, and ease.',
   },
@@ -238,6 +270,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'process',
     leading: 'ЧИ',
     creative: 'БЭ',
+    role: 'ЧС',
+    painful: 'БЛ',
     descriptionRu: 'Катализатор талантов людей, вдохновляющий дипломат возможностей и гуманистических связей.',
     descriptionEn: 'Catalyst of human potential, intuitive connector of opportunities, and empathetic diplomat.',
   },
@@ -252,6 +286,8 @@ export const SOCIOTYPES_META: Record<SociotypeCode, SociotypeMeta> = {
     orientation: 'result',
     leading: 'БЭ',
     creative: 'ЧИ',
+    role: 'БС',
+    painful: 'ЧС',
     descriptionRu: 'Носитель глубокой нравственной мудрости, психологического исцеления и духовного развития.',
     descriptionEn: 'Bearer of profound moral wisdom, psychological healing, and quiet spiritual guidance.',
   },
@@ -316,7 +352,10 @@ export function getBirthdayArchetypeInfo(day: number) {
   return BIRTHDAY_ARCHETYPES[normalizedDay] || BIRTHDAY_ARCHETYPES[1];
 }
 
-export function evaluateSocionicsTest(answers: Record<number, OptionKey>): SocionicsTestResult {
+export function evaluateSocionicsTest(
+  answers: Record<number, OptionKey>,
+  energyAnswers?: Record<number, OptionKey>
+): SocionicsTestResult {
   const rawFunctions: Record<CognitiveFunction, number> = {
     ЧИ: 0,
     БИ: 0,
@@ -367,23 +406,19 @@ export function evaluateSocionicsTest(answers: Record<number, OptionKey>): Socio
   const top3 = sortedFunctions.slice(0, 3);
   const bottom3 = sortedFunctions.slice(-3).reverse();
 
-  // Score each of 16 sociotypes based on leading + creative + quadra synergy
+  // Score each of 16 sociotypes based strictly on Model A formula:
+  // Score(T) = 1.0 * F_norm(Leading) + 0.8 * F_norm(Creative) + 0.3 * F_norm(Role) + 0.0 * F_norm(Painful)
+  // (No artificial orientation bonus - orientation is determined separately)
   const sociotypeScores: Array<{ code: SociotypeCode; score: number }> = [];
 
   for (const meta of Object.values(SOCIOTYPES_META)) {
     const leadScore = normalizedFunctions[meta.leading] || 0;
     const creatScore = normalizedFunctions[meta.creative] || 0;
-    // Base weight formula: leading*1.5 + creative*1.0
-    let typeScore = leadScore * 1.5 + creatScore * 1.0;
+    const roleScore = normalizedFunctions[meta.role] || 0;
+    const painfulScore = normalizedFunctions[meta.painful] || 0;
 
-    // Bonus for matching orientation
-    if (meta.orientation === 'result' && resultScore > processScore) {
-      typeScore += 15;
-    } else if (meta.orientation === 'process' && processScore >= resultScore) {
-      typeScore += 15;
-    }
-
-    sociotypeScores.push({ code: meta.code, score: typeScore });
+    const typeScore = 1.0 * leadScore + 0.8 * creatScore + 0.3 * roleScore + 0.0 * painfulScore;
+    sociotypeScores.push({ code: meta.code, score: Math.round(typeScore * 10) / 10 });
   }
 
   sociotypeScores.sort((a, b) => b.score - a.score);
@@ -457,26 +492,44 @@ export function evaluateSocionicsTest(answers: Record<number, OptionKey>): Socio
 
   const consistencyScore = Math.max(0.6, Math.round((1 - contradictions.length * 0.08) * 100) / 100);
 
-  // Social desirability bias detection from Block 7 (screens 18, 19)
+  // Social desirability bias detection based on weights across screens 18, 19
+  let socialDesirabilityScore = 0;
+  const w18 = SOCIONICS_DIAGNOSTIC_WEIGHTS[18]?.[answers[18] || 'A'];
+  const w19 = SOCIONICS_DIAGNOSTIC_WEIGHTS[19]?.[answers[19] || 'A'];
+  if (w18) socialDesirabilityScore += (w18.БЭ || 0) + (w18.ЧЭ || 0);
+  if (w19) socialDesirabilityScore += (w19.БЭ || 0) + (w19.ЧЭ || 0);
+
   let sdb: 'low' | 'moderate' | 'high' = 'low';
-  const ans18 = answers[18];
-  const ans19 = answers[19];
-  if (ans18 === 'E' && ans19 === 'E') {
+  if (socialDesirabilityScore >= 1.6) {
+    sdb = 'high';
+  } else if (socialDesirabilityScore >= 1.1) {
     sdb = 'moderate';
   }
 
-  const topScore = sociotypeScores[0]?.score || 100;
-  const secondScore = sociotypeScores[1]?.score || 80;
-  const typeConfidence = Math.min(0.96, Math.max(0.7, 0.6 + (topScore - secondScore) / 150));
+  // Exact requested Confidence Formula: (Score(T1) - Score(T2)) / Score(T1)
+  const topScore = sociotypeScores[0]?.score || 1;
+  const secondScore = sociotypeScores[1]?.score || 0;
+  const rawConfidence = topScore > 0 ? (topScore - secondScore) / topScore : 0.5;
+  const typeConfidence = Math.min(0.99, Math.max(0.10, Math.round(rawConfidence * 100) / 100));
+
+  // Energy Diagnostics & Gatekeeper
+  let energyDiagnostics: EnergyDiagnosticsResult | undefined;
+  if (energyAnswers && Object.keys(energyAnswers).length > 0) {
+    energyDiagnostics = evaluateEnergyEfficiency(energyAnswers);
+  }
+
+  const reliabilityFlag = energyDiagnostics ? energyDiagnostics.reliability_flag : true;
 
   return {
     id: `soc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     completedAt: new Date().toISOString(),
     answers,
+    energyAnswers,
+    energy_diagnostics: energyDiagnostics,
     sociotype: {
       primary: primaryCode,
       secondary: secondaryCode,
-      confidence: Math.round(typeConfidence * 100) / 100,
+      confidence: typeConfidence,
       candidates: sociotypeScores.slice(0, 4).map((s) => s.code),
       nameRu: primaryMeta.nameRu,
       nameEn: primaryMeta.nameEn,
@@ -486,7 +539,7 @@ export function evaluateSocionicsTest(answers: Record<number, OptionKey>): Socio
     quadra: {
       classic: classicQuadra,
       bashkuev: bashkuevQuadra,
-      confidence: Math.round((typeConfidence + 0.05) * 100) / 100,
+      confidence: Math.min(0.99, Math.round((typeConfidence + 0.15) * 100) / 100),
       descriptionRu: quadraDescriptions[classicQuadra].ru,
       descriptionEn: quadraDescriptions[classicQuadra].en,
       descriptionEs: quadraDescriptions[classicQuadra].es,
@@ -503,6 +556,7 @@ export function evaluateSocionicsTest(answers: Record<number, OptionKey>): Socio
       consistency_score: consistencyScore,
       contradictions,
       social_desirability_bias: sdb,
+      reliability_flag: reliabilityFlag,
     },
     cognitive_profile: {
       functions: rawFunctions,

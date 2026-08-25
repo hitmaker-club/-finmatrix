@@ -10,7 +10,7 @@
  * - Fault tolerance: if AI fails/times out, Layer 1 remains valid and can be re-analyzed.
  */
 
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 import {
   FinancialMatrixLayer1Output,
   FinancialMatrixLayer2Output,
@@ -19,8 +19,8 @@ import {
 import { logger } from '../services/logger.js';
 
 export const PROMPT_VERSION = 'v3.0.0-behavioral-systems-financial';
-export const PRIMARY_MODEL_ID = 'gemini-flash-latest';
-export const FALLBACK_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.7-flash'];
+export const PRIMARY_MODEL_ID = 'gemini-3.1-flash-lite';
+export const FALLBACK_MODELS = ['gemini-3.7-flash', 'gemini-3.6-flash'];
 
 let aiClient: GoogleGenAI | null = null;
 
@@ -43,6 +43,24 @@ function getAIClient(): GoogleGenAI | null {
   return aiClient;
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timeout of ${timeoutMs}ms exceeded while calling ${label}`));
+    }, timeoutMs);
+
+    promise
+      .then((res) => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
 async function callGeminiWithFallback(
   client: GoogleGenAI,
   userPrompt: string,
@@ -52,38 +70,35 @@ async function callGeminiWithFallback(
   const modelsToTry = [PRIMARY_MODEL_ID, ...FALLBACK_MODELS];
 
   for (const model of modelsToTry) {
-    const maxRetries = 2;
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        const response = await client.models.generateContent({
+    try {
+      const config: any = {
+        systemInstruction,
+        temperature: 0.2,
+        responseMimeType: 'application/json',
+        responseSchema: schema,
+      };
+
+      // For Gemini 3 models, use LOW thinking level for quick, deterministic structured extraction
+      if (model.startsWith('gemini-3')) {
+        config.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+      }
+
+      const response = await withTimeout(
+        client.models.generateContent({
           model,
           contents: userPrompt,
-          config: {
-            systemInstruction,
-            temperature: 0.2,
-            responseMimeType: 'application/json',
-            responseSchema: schema,
-          },
-        });
+          config,
+        }),
+        25000,
+        `Gemini model ${model}`
+      );
 
-        if (response.text) {
-          return { text: response.text, modelUsed: model };
-        }
-      } catch (err: any) {
-        const errMsg = err?.message || String(err);
-        const isTransient =
-          errMsg.includes('503') ||
-          errMsg.includes('429') ||
-          errMsg.includes('UNAVAILABLE') ||
-          errMsg.includes('high demand') ||
-          errMsg.includes('RESOURCE_EXHAUSTED');
-
-        if (isTransient && attempt < maxRetries - 1) {
-          await new Promise((res) => setTimeout(res, 500 * (attempt + 1)));
-          continue;
-        }
-        break; // break inner retry loop to try next model in cascade
+      if (response.text) {
+        return { text: response.text, modelUsed: model };
       }
+    } catch (err: any) {
+      const errMsg = err?.message || String(err);
+      logger.warn('AI', `Model ${model} attempt failed: ${errMsg}`);
     }
   }
 

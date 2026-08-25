@@ -20,6 +20,8 @@ import {
 } from '../types/domain.js';
 import {
   SocionicsScreen,
+  EnergyScreen,
+  EnergyDiagnosticsResult,
   SocionicsTestResult,
   FullIntegrativeAnalysisRecord,
   OptionKey,
@@ -210,13 +212,29 @@ export const api = {
     });
   },
 
-  // Socionics & Integrative AI
+  // Socionics, Energy Gatekeeper & Integrative AI
   async getSocionicsScreens(): Promise<{ screens: SocionicsScreen[] }> {
     return request('/api/diagnostics/socionics/screens');
   },
 
+  async getEnergyScreens(): Promise<{ screens: EnergyScreen[] }> {
+    return request('/api/diagnostics/energy/screens');
+  },
+
+  async evaluateEnergy(input: {
+    answers: Record<number, OptionKey>;
+    profileId?: string;
+    profileName?: string;
+  }): Promise<{ result: { id: string; completedAt: string; profileId?: string; profileName?: string; answers: Record<number, OptionKey>; diagnostics: EnergyDiagnosticsResult } }> {
+    return request('/api/diagnostics/energy/evaluate', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
   async evaluateSocionics(input: {
     answers: Record<number, OptionKey>;
+    energyAnswers?: Record<number, OptionKey>;
     profileId?: string;
     profileName?: string;
   }): Promise<{ result: SocionicsTestResult }> {
@@ -242,6 +260,7 @@ export const api = {
     fatherBirthDate?: string;
     socionicsResultId?: string;
     socionicsAnswers?: Record<number, OptionKey>;
+    energyAnswers?: Record<number, OptionKey>;
     lang?: string;
   }): Promise<{ record: FullIntegrativeAnalysisRecord }> {
     return request('/api/diagnostics/integrative/analyze', {

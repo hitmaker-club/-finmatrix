@@ -54,6 +54,7 @@ export interface TranslationDictionary {
     historyCalculations: string;
     diagnosticTypes: string;
     socionics: string;
+    energy?: string;
     integrativeReport: string;
   };
   form: {
@@ -540,5 +541,12 @@ export interface TranslationDictionary {
     runNewIntegration: string;
     historyTitle: string;
     noReportsYet: string;
+  };
+  energy?: {
+    badge?: string;
+    title?: string;
+    subtitle?: string;
+    stepProgress?: string;
+    btnCalculate?: string;
   };
 }

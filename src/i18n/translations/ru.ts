@@ -54,6 +54,7 @@ export const ru: TranslationDictionary = {
     historyCalculations: 'История расчётов',
     diagnosticTypes: 'Виды диагностики',
     socionics: 'Соционика',
+    energy: 'Ресурсность (КПД)',
     integrativeReport: 'Комплексный анализ',
   },
   form: {
@@ -540,5 +541,12 @@ export const ru: TranslationDictionary = {
     runNewIntegration: 'Запустить новый комплексный анализ',
     historyTitle: 'История комплексных отчетов',
     noReportsYet: 'Комплексные отчеты еще не формировались.',
+  },
+  energy: {
+    badge: 'GATEKEEPER: ДИАГНОСТИКА РЕСУРСНОГО СОСТОЯНИЯ',
+    title: 'Определение психофизиологического ресурса и КПД',
+    subtitle: '7 точных поведенческих маркеров (Э-1 — Э-7) для оценки витального тонуса, уровня нервного истощения, баланса расхода сил и персонализированных протоколов нейрорегуляции.',
+    stepProgress: 'Маркер',
+    btnCalculate: 'Рассчитать КПД и протокол',
   },
 };

@@ -118,7 +118,21 @@ export const Navigation: React.FC<NavigationProps> = ({
               <span>{t.nav?.matrix || 'Fin Matrix'}</span>
             </button>
 
-            {/* 2. Socionics Tab */}
+            {/* 2. Resource State (Energy / Gatekeeper) Tab */}
+            <button
+              id="nav-energy-tab"
+              onClick={() => setCurrentTab('energy')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                currentTab === 'energy'
+                  ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30 ring-1 ring-cyan-400/50'
+                  : 'text-slate-300 dark:text-slate-300 light:text-slate-700 hover:text-white hover:bg-slate-800/60'
+              }`}
+            >
+              <Zap className="w-4 h-4 text-cyan-400" />
+              <span>{t.nav?.energy || 'Ресурсность (КПД)'}</span>
+            </button>
+
+            {/* 3. Socionics Tab */}
             <button
               id="nav-socionics-tab"
               onClick={() => setCurrentTab('socionics')}
@@ -412,7 +426,18 @@ export const Navigation: React.FC<NavigationProps> = ({
           <span>Fin Matrix</span>
         </button>
 
-        {/* 2. Socionics Tab */}
+        {/* 2. Resource State (Energy) Tab */}
+        <button
+          onClick={() => setCurrentTab('energy')}
+          className={`flex flex-col items-center py-1 px-2 rounded-lg text-[9px] font-semibold ${
+            currentTab === 'energy' ? 'text-cyan-400 font-bold' : 'text-slate-400'
+          }`}
+        >
+          <Zap className="w-5 h-5 mb-0.5 text-cyan-400" />
+          <span>{t.nav?.energy || 'Ресурсность'}</span>
+        </button>
+
+        {/* 3. Socionics Tab */}
         <button
           onClick={() => setCurrentTab('socionics')}
           className={`flex flex-col items-center py-1 px-2 rounded-lg text-[9px] font-semibold ${

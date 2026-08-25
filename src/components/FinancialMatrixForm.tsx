@@ -238,19 +238,12 @@ export const FinancialMatrixForm: React.FC<FinancialMatrixFormProps> = ({
       return;
     }
 
-    // If custom dates are entered, prompt user to select/create a profile so that data is saved and persisted without errors
-    if (useCustomDates) {
-      setShowCustomDateSaveModal(true);
-      return;
-    }
-
-    // If modifications are detected in an existing selected profile, open confirmation modal
+    // If modifications are detected in an existing selected profile, automatically sync profile in background
     if (!useCustomDates && selectedProfile && hasUnsavedProfileChanges) {
-      setShowConfirmModal(true);
-      return;
+      performProfileSync().catch((err) => console.warn('Background profile sync:', err));
     }
 
-    // Otherwise run directly
+    // Run diagnostic calculation directly
     await executeDiagnostic();
   };
 

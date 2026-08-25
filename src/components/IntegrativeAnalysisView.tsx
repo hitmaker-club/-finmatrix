@@ -208,6 +208,92 @@ ${socialRoles.map((r, i) => `${i + 1}. ${r.title}\n- Суть: ${r.essence}\n- �
         </div>
       </div>
 
+      {/* GATEKEEPER PSYCHOPHYSIOLOGICAL LAYER & RECOVERY PROTOCOL */}
+      {(report.energy_diagnostics || soc?.energy_diagnostics) && (
+        (() => {
+          const energy = report.energy_diagnostics || soc?.energy_diagnostics;
+          if (!energy) return null;
+          const isDeficit = energy.kpd < 1.0;
+          return (
+            <section
+              className={`rounded-3xl p-6 sm:p-8 shadow-2xl border transition-all ${
+                isDeficit
+                  ? 'bg-gradient-to-br from-amber-950/80 via-slate-900 to-rose-950/80 border-amber-500/50'
+                  : 'bg-gradient-to-br from-emerald-950/60 via-slate-900 to-slate-950 border-emerald-500/40'
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-lg shrink-0 ${
+                      isDeficit ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-300'
+                    }`}
+                  >
+                    ⚡
+                  </div>
+                  <div>
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-400 block">
+                      Психофизиологический слой (Gatekeeper)
+                    </span>
+                    <h2 className="text-lg sm:text-xl font-black text-white">
+                      КПД энергосистемы: {energy.kpd.toFixed(2)}{' '}
+                      <span className={isDeficit ? 'text-amber-400' : 'text-emerald-400'}>
+                        ({isDeficit ? 'Режим истощения / Дефицит' : 'Профицит / Базовый ресурс в норме'})
+                      </span>
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-3 py-1 rounded-xl bg-slate-800/90 text-slate-300 font-bold border border-slate-700">
+                    Вход: {energy.energyIn.toFixed(1)}/20
+                  </span>
+                  <span className="text-xs px-3 py-1 rounded-xl bg-slate-800/90 text-slate-300 font-bold border border-slate-700">
+                    Расход: {energy.energyOut.toFixed(1)}/20
+                  </span>
+                </div>
+              </div>
+
+              {isDeficit ? (
+                <div className="mt-5 space-y-4">
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs leading-relaxed">
+                    <strong>ВНИМАНИЕ:</strong> Так как КПД системы ниже 1.0 (входящая витальность меньше операционных утечек), соционический тип личности и финансовые решения функционируют в режиме компенсации. Перед принятием высокорисковых решений и масштабированием капитала обязательна стабилизация физиологии.
+                  </div>
+
+                  {energy.protocol && (
+                    <div className="p-5 rounded-2xl bg-slate-950/70 border border-amber-500/30">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-xs font-extrabold uppercase text-amber-400">
+                          Первоочередной протокол: {energy.protocol.title}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-400">
+                          Автор: {energy.protocol.source}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 mb-3">
+                        <strong>Мишень:</strong> {energy.protocol.scientificBasis} (Кластер {energy.dominantCluster}: {energy.clusterNameRu})
+                      </p>
+                      <div className="space-y-1.5">
+                        {energy.protocol.actionSteps.map((step, sIdx) => (
+                          <div key={sIdx} className="text-xs text-slate-200 flex items-start gap-2">
+                            <span className="text-amber-400 font-black">•</span>
+                            <span>{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-4 text-xs text-emerald-300/90 leading-relaxed">
+                  Физиологический контур находится в ресурсном состоянии. Соционический инструментарий и векторы капитала могут быть задействованы на полную мощность без риска срыва адаптации.
+                </p>
+              )}
+            </section>
+          );
+        })()
+      )}
+
       {/* 8 Comprehensive Sections */}
 
       {/* 1. CENTRAL MECHANISM */}

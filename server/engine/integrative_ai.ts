@@ -9,7 +9,7 @@
  * Implements role: "Senior Integrative Behavioral Analyst and Personal Potential Architect"
  */
 
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 import { Language } from '../../src/i18n/types.js';
 import {
   FinancialMatrixLayer1Output,
@@ -28,6 +28,15 @@ function getGeminiClient(): GoogleGenAI | null {
     return null;
   }
   return new GoogleGenAI({ apiKey });
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number = 25000, tag: string = 'Operation'): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${tag} timed out after ${timeoutMs}ms`)), timeoutMs)
+    ),
+  ]);
 }
 
 export async function generateIntegrativeAnalysis(input: {
@@ -83,18 +92,62 @@ export async function generateIntegrativeAnalysis(input: {
           ? 'Output MUST be strictly in Spanish.'
           : 'Вывод строго на русском языке.';
 
-      const systemInstruction = `Ты — Senior Integrative Behavioral Analyst и Personal Potential Architect.
-Твоя задача — провести комплексный анализ, который интегрирует четыре независимых слоя данных:
-1. Соционический профиль (социотип, квадра, результатник/процессник, иерархия функций)
+      const energySection = soc.energy_diagnostics
+        ? `
+ПСИХОФИЗИОЛОГИЧЕСКИЙ СЛОЙ (ЭНЕРГОЭФФЕКТИВНОСТЬ И GATEKEEPER):
+- КПД системы (KPD): ${soc.energy_diagnostics.kpd.toFixed(2)} (${soc.energy_diagnostics.kpd >= 1.0 ? 'Норма/Профицит' : 'ДЕФИЦИТ/ИСТОЩЕНИЕ'})
+- Энерговход (Входящая витальность): ${soc.energy_diagnostics.energyIn.toFixed(1)} / 20.0
+- Энерготраты (Операционные утечки): ${soc.energy_diagnostics.energyOut.toFixed(1)} / 20.0
+- Ведущий кластер дефицита: Кластер ${soc.energy_diagnostics.dominantCluster} (${soc.energy_diagnostics.clusterNameRu})
+- Флаг надежности тестирования: ${soc.energy_diagnostics.reliability_flag ? 'RELIABLE (достоверно)' : 'UNRELIABLE (режим выживания/искажение)'}
+${soc.energy_diagnostics.protocol ? `- Рекомендованный физиологический протокол восстановления: ${soc.energy_diagnostics.protocol.title} (${soc.energy_diagnostics.protocol.source})
+  * Научная база и мишень: ${soc.energy_diagnostics.protocol.scientificBasis}
+  * Ключевые шаги: ${soc.energy_diagnostics.protocol.actionSteps.join('; ')}` : ''}
+
+${soc.energy_diagnostics.kpd < 1.0 ? 'ВАЖНОЕ ТРЕБОВАНИЕ: Так как КПД < 1.0, НАЧНИ ОТЧЕТ С ПЕРВООЧЕРЕДНОГО ПРОТОКОЛА ВОССТАНОВЛЕНИЯ. Объясни, что без физиологической стабилизации соционический тип работает в режиме компенсации, а финансовый потенциал блокируется истощением.' : ''}
+`
+        : '';
+
+      const systemInstruction = `Ты — Senior Integrative Behavioral Analyst, Neurophysiology & Performance Architect.
+Твоя задача — провести глубокий комплексный анализ, который интегрирует 4 слоя данных личности + психофизиологический слой Gatekeeper:
+1. Соционический профиль (социотип, квадра, результатник/процессник, иерархия функций Модели А)
 2. Финансовая матрица (V1-V4 векторы и межпоколенческие связи)
 3. Анализ финансовой матрицы (поведенческий отчет, тени, паттерны)
 4. Архетип дня рождения (число дня как структурный маркер тем и паттернов, без эзотерики и нумерологии)
+5. Психофизиологический Gatekeeper (КПД системы = Вход / Расход). 
+
+ФУНДАМЕНТАЛЬНАЯ БАЗА ЗНАНИЙ И ИСТОЧНИКИ ИСТИНЫ (НЕЙРОФИЗИОЛОГИЯ И СОМАТИКА):
+
+1. ДЫХАНИЕ И ТОЛЕРАНТНОСТЬ К CO₂ (Быстрый физиологический сдвиг):
+   - Патрик Маккеон («Кислородное преимущество» / The Oxygen Advantage): BOLT (Body Oxygen Level Test), медленное носовое дыхание, задержка дыхания после выдоха для толерантности к CO₂, расширения сосудов и насыщения тканей O₂ (антидот для паники/страха).
+   - Джеймс Нестор («Дыхание» / Breath): гипервентиляция вызывает тревогу и спазм сосудов; удлиненный выдох и паузы включают парасимпатический тонус.
+   - Эндрю Губерман (Andrew Huberman, Huberman Lab): «Физиологический вздох» (Physiological Sigh) — 2 коротких вдоха носом + 1 длительный выдох ртом (5 циклов) для мгновенного сброса перевозбуждения миндалевидного тела и снижения уровня CO₂ за 60 секунд.
+
+2. ПОЛИВАГАЛЬНАЯ ТЕОРИЯ И РЕГУЛЯЦИЯ ВАГУСА:
+   - Стэнли Розенберг («Доступ к целительной силе блуждающего нерва»): «Базовое упражнение» (The Basic Exercise) — сцепление пальцев за затылком и смещение взгляда в крайнее положение до непроизвольного вздоха/глотания — механическая стимуляция вентрального вагуса, убирающая фоновую тревогу.
+   - Эмили и Амелия Нагоски («Выгорание»): концепция «Завершения цикла стресса». Чтобы выйти из стресса, недостаточно когнитивного отдыха; телу нужно физическое подтверждение безопасности (20 приседаний/прыжков, глубокий выдох, мышечный сброс).
+
+3. МЕНТАЛЬНЫЕ ЧИТ-КОДЫ: ОШИБКА ПРЕДСКАЗАНИЯ И ПРЕРЫВАНИЕ ПАТТЕРНА:
+   - Prediction Error (Тали Шарот, нейробиология новизны): парадоксальное, нестандартное действие (смена ведущей руки, ледяное умывание, непривычный аудиотрек) провоцирует выброс норадреналина и дофамина, мгновенно перезагружая префронтальную кору при когнитивном тупике.
+   - Б. Дж. Фогг («Микропривычки» / Tiny Habits): якорение и квант действия (сверхмалый шаг: открыть документ и написать 1 слово, встать за стаканом воды), обходящие ступор базальных ганглиев.
+
+4. СОМАТИЧЕСКОЕ ПЕРЕЖИВАНИЕ И ВЫХОД ИЗ «ЗАМОРОЗКИ»:
+   - Питер Левин («Пробуждение тигра» / Somatic Experiencing): нейтральное безоценочное наблюдение соматического фокуса (тяжесть, спазм) на 30–60 секунд без попытки его мысленно исправить.
+
+ПРАВИЛА ГЕНЕРАЦИИ ПРОТОКОЛОВ ВОССТАНОВЛЕНИЯ (GATEKEEPER):
+Если КПД системы < 1.0 (Кластеры C, D, E):
+- ТЫ ОБЯЗАН НАЧАТЬ РЕКОМЕНДАЦИИ С ФИЗИОЛОГИЧЕСКОГО/СОМАТИЧЕСКОГО ВМЕШАТЕЛЬСТВА НА ОСНОВЕ БАЗЫ ЗНАНИЙ.
+- СТРОГО ЗАПРЕЩЕНО: давать банальные советы («успокойтесь», «мыслите позитивно», «найдите мотивацию»), рекомендовать сложные аналитические задачи до восстановления базового физиологического тона.
+- КЛАСТЕР C (Выгорание/раздражение/перегрев): применяй «Физиологический вздох» (Huberman) и «Завершение цикла стресса» (Нагоски).
+- КЛАСТЕР D (Страх/паника/реактивность): применяй нормализацию толерантности к CO₂ (McKeown) и стимуляцию вентрального вагуса (Rosenberg).
+- КЛАСТЕР E (Апатия/заморозка/бессилие): применяй Прерывание паттерна (Prediction Error) и микро-кванты действия (Fogg/Левин).
+- ОБЯЗАТЕЛЬНО связывай протокол с социотипом и матрицей клиента (например: «Как ИЛЭ с сильной интуицией и V3=9, вы склонны застревать в абстрактных мыслях. Этот физиологический протокол возвращает вас из головы в тело, чтобы разблокировать КПД стратегии»).
 
 ПРАВИЛА АНАЛИЗА:
 - Не пересказывай исходные данные — синтезируй их.
-- Найди точки напряжения и точки синергии между всеми 4 слоями.
+- Найди точки напряжения и точки синергии между всеми слоями.
 - Формулируй конкретные механизмы, а не абстрактные описания.
-- Стиль: строгий, глубокий, психологически точный, без эзотерики и инфобизнесовых штампов.
+- Стиль: строгий, глубокий, психологически точный, научно обоснованный, без эзотерики и инфобизнесовых штампов.
 ${languageInstruction}`;
 
       const userPrompt = `
@@ -102,6 +155,8 @@ ${languageInstruction}`;
 
 СУБЪЕКТ: ${input.subjectName || 'Клиент'}
 ДАТА РОЖДЕНИЯ: ${input.birthDate} (День ${dayNum})
+
+${energySection}
 
 СЛОЙ 1: СОЦИОНИКА
 - Социотип: ${soc.sociotype.primary} (${soc.sociotype.nameRu} / ${soc.sociotype.aliasRu})
@@ -136,7 +191,7 @@ ${
 - Фокус применения: ${dayArchetype.focus}
 
 СГЕНЕРИРУЙ ОТЧЕТ СТРОГО В ФОРМАТЕ JSON СО СЛЕДУЮЩИМИ 8 РАЗДЕЛАМИ:
-1. centralMechanism: Центральный механизм системы (1-2 емких абзаца: как сходятся 4 слоя в один работающий механизм).
+1. centralMechanism: Центральный механизм системы (1-2 емких абзаца: как сходятся все слои в один работающий механизм; если КПД < 1.0, обязательно укажи первичность протокола восстановления).
 2. synergyPoints: Массив из 3-4 точек синергии. Каждая точка содержит:
    - title: Название синергии
    - archetype: Что задает архетип дня ${dayNum}
@@ -161,106 +216,126 @@ ${
    - growthDirection: Что позволит превратить потенциал в масштабные деньги
 `;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }],
-          },
-        ],
-        config: {
-          temperature: 0.25,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              centralMechanism: { type: Type.STRING },
-              synergyPoints: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    title: { type: Type.STRING },
-                    archetype: { type: Type.STRING },
-                    socionics: { type: Type.STRING },
-                    matrix: { type: Type.STRING },
-                    financialManifestation: { type: Type.STRING },
-                  },
-                  required: ['title', 'archetype', 'socionics', 'matrix', 'financialManifestation'],
-                },
-              },
-              conflicts: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    title: { type: Type.STRING },
-                    archetypeWant: { type: Type.STRING },
-                    socionicsMatrixDemand: { type: Type.STRING },
-                    financialConsequence: { type: Type.STRING },
-                  },
-                  required: ['title', 'archetypeWant', 'socionicsMatrixDemand', 'financialConsequence'],
-                },
-              },
-              familyLayer: { type: Type.STRING },
-              mainInternalConflict: { type: Type.STRING },
-              mainLever: {
-                type: Type.OBJECT,
-                properties: {
-                  title: { type: Type.STRING },
-                  behaviorChange: { type: Type.STRING },
-                  actionableDirections: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING },
-                  },
-                },
-                required: ['title', 'behaviorChange', 'actionableDirections'],
-              },
-              socialRoles: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    title: { type: Type.STRING },
-                    essence: { type: Type.STRING },
-                    whyFits: { type: Type.STRING },
-                    monetization: { type: Type.STRING },
-                  },
-                  required: ['title', 'essence', 'whyFits', 'monetization'],
-                },
-              },
-              quickSummary: {
-                type: Type.OBJECT,
-                properties: {
-                  strongestPotential: { type: Type.STRING },
-                  bottleneck: { type: Type.STRING },
-                  growthDirection: { type: Type.STRING },
-                },
-                required: ['strongestPotential', 'bottleneck', 'growthDirection'],
-              },
-            },
-            required: [
-              'centralMechanism',
-              'synergyPoints',
-              'conflicts',
-              'familyLayer',
-              'mainInternalConflict',
-              'mainLever',
-              'socialRoles',
-              'quickSummary',
-            ],
-          },
-        },
-      });
+      const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.7-flash', 'gemini-3.6-flash'];
+      let parsed: any = null;
+      let modelSuccess = 'gemini-3.1-flash-lite';
 
-      const rawText = response.text?.trim();
-      if (rawText) {
-        const parsed = JSON.parse(rawText);
+      for (const modelCandidate of modelsToTry) {
+        try {
+          const response = await withTimeout(
+            ai.models.generateContent({
+              model: modelCandidate,
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }],
+                },
+              ],
+              config: {
+                temperature: 0.25,
+                responseMimeType: 'application/json',
+                thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+                responseSchema: {
+                  type: Type.OBJECT,
+                  properties: {
+                    centralMechanism: { type: Type.STRING },
+                    synergyPoints: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          title: { type: Type.STRING },
+                          archetype: { type: Type.STRING },
+                          socionics: { type: Type.STRING },
+                          matrix: { type: Type.STRING },
+                          financialManifestation: { type: Type.STRING },
+                        },
+                        required: ['title', 'archetype', 'socionics', 'matrix', 'financialManifestation'],
+                      },
+                    },
+                    conflicts: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          title: { type: Type.STRING },
+                          archetypeWant: { type: Type.STRING },
+                          socionicsMatrixDemand: { type: Type.STRING },
+                          financialConsequence: { type: Type.STRING },
+                        },
+                        required: ['title', 'archetypeWant', 'socionicsMatrixDemand', 'financialConsequence'],
+                      },
+                    },
+                    familyLayer: { type: Type.STRING },
+                    mainInternalConflict: { type: Type.STRING },
+                    mainLever: {
+                      type: Type.OBJECT,
+                      properties: {
+                        title: { type: Type.STRING },
+                        behaviorChange: { type: Type.STRING },
+                        actionableDirections: {
+                          type: Type.ARRAY,
+                          items: { type: Type.STRING },
+                        },
+                      },
+                      required: ['title', 'behaviorChange', 'actionableDirections'],
+                    },
+                    socialRoles: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          title: { type: Type.STRING },
+                          essence: { type: Type.STRING },
+                          whyFits: { type: Type.STRING },
+                          monetization: { type: Type.STRING },
+                        },
+                        required: ['title', 'essence', 'whyFits', 'monetization'],
+                      },
+                    },
+                    quickSummary: {
+                      type: Type.OBJECT,
+                      properties: {
+                        strongestPotential: { type: Type.STRING },
+                        bottleneck: { type: Type.STRING },
+                        growthDirection: { type: Type.STRING },
+                      },
+                      required: ['strongestPotential', 'bottleneck', 'growthDirection'],
+                    },
+                  },
+                  required: [
+                    'centralMechanism',
+                    'synergyPoints',
+                    'conflicts',
+                    'familyLayer',
+                    'mainInternalConflict',
+                    'mainLever',
+                    'socialRoles',
+                    'quickSummary',
+                  ],
+                },
+              },
+            }),
+            15000,
+            `Integrative Gemini (${modelCandidate})`
+          );
+
+          const rawText = response.text?.trim();
+          if (rawText) {
+            parsed = JSON.parse(rawText);
+            modelSuccess = modelCandidate;
+            break;
+          }
+        } catch (modelErr: any) {
+          logger.warn('AI', `Integrative analysis model ${modelCandidate} failed: ${modelErr?.message || modelErr}`);
+        }
+      }
+
+      if (parsed) {
         return {
           id: `int_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           promptVersion: '4-Layer-Integrative-v1.0',
-          modelUsed: 'gemini-2.5-flash',
+          modelUsed: modelSuccess,
           analyzedAt: new Date().toISOString(),
           subjectName: input.subjectName || 'Client',
           birthDate: input.birthDate,
@@ -277,6 +352,7 @@ ${
           mainLever: parsed.mainLever,
           socialRoles: parsed.socialRoles || [],
           quickSummary: parsed.quickSummary,
+          energy_diagnostics: soc.energy_diagnostics,
           confidenceScore: 0.94,
           language: lang,
         };

@@ -75,8 +75,11 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
   const [testHistory, setTestHistory] = useState<SocionicsTestResult[]>([]);
   const [viewHistoryModal, setViewHistoryModal] = useState<boolean>(false);
 
+  const [bypassPrerequisite, setBypassPrerequisite] = useState<boolean>(false);
+
   // Prerequisite check: Profile data filled + Financial Matrix calculated (L1) + AI Analysis received (L2)
   const isProfileFilled = useMemo(() => {
+    if (!activeProfile) return true;
     return Boolean(
       activeProfile &&
       activeProfile.birthDate &&
@@ -95,20 +98,23 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
   }, [activeProfile, history, currentAnalysis]);
 
   const isMatrixCalculated = useMemo(() => {
+    if (!activeProfile) return true;
     return Boolean(matchingRecord && matchingRecord.layer1 && matchingRecord.layer1.vectors);
-  }, [matchingRecord]);
+  }, [activeProfile, matchingRecord]);
 
   const isMatrixAiAnalyzed = useMemo(() => {
+    if (!activeProfile) return true;
     return Boolean(
       matchingRecord &&
       matchingRecord.layer2 &&
       (matchingRecord.status === 'COMPLETED' || matchingRecord.layer2.executiveSummary || matchingRecord.layer2.promptVersion)
     );
-  }, [matchingRecord]);
+  }, [activeProfile, matchingRecord]);
 
   const isPrerequisiteMet = useMemo(() => {
+    if (bypassPrerequisite || !activeProfile) return true;
     return isProfileFilled && isMatrixCalculated && isMatrixAiAnalyzed;
-  }, [isProfileFilled, isMatrixCalculated, isMatrixAiAnalyzed]);
+  }, [bypassPrerequisite, activeProfile, isProfileFilled, isMatrixCalculated, isMatrixAiAnalyzed]);
 
   // Profiles that have already completed calculations
   const readyProfiles = useMemo(() => {
@@ -406,15 +412,26 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
 
             {/* Action Buttons */}
             <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-              <button
-                type="button"
-                onClick={onNavigateToMatrix}
-                className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Calculator className="w-4 h-4" />
-                <span>{t.socionics?.btnGoToMatrix || 'Перейти к заполнению и расчету матрицы'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onNavigateToMatrix}
+                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Calculator className="w-4 h-4" />
+                  <span>{t.socionics?.btnGoToMatrix || 'Перейти к заполнению матрицы'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBypassPrerequisite(true)}
+                  className="px-5 py-3 rounded-2xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <span>Пройти тестирование сразу (Автономный режим)</span>
+                </button>
+              </div>
 
               {/* Ready profiles switcher if available */}
               {readyProfiles.length > 0 && activeProfile && !readyProfiles.some((rp) => rp.id === activeProfile.id) && (
@@ -712,6 +729,71 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
                 </p>
               </div>
             </div>
+
+            {/* Gatekeeper & Energy Efficiency Diagnostics */}
+            {testResult?.energy_diagnostics && (
+              <div
+                className={`mt-6 p-5 sm:p-6 rounded-2xl border ${
+                  testResult.energy_diagnostics.kpd < 1.0
+                    ? 'bg-amber-950/40 border-amber-500/40'
+                    : 'bg-emerald-950/30 border-emerald-500/30'
+                }`}
+              >
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                  <div>
+                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                      Психофизиологический слой (Gatekeeper)
+                    </span>
+                    <h3 className="text-base font-black text-white">
+                      КПД энергосистемы: {testResult.energy_diagnostics.kpd.toFixed(2)}{' '}
+                      <span
+                        className={
+                          testResult.energy_diagnostics.kpd < 1.0
+                            ? 'text-amber-400 text-xs font-bold'
+                            : 'text-emerald-400 text-xs font-bold'
+                        }
+                      >
+                        {testResult.energy_diagnostics.kpd < 1.0
+                          ? '(Дефицит / Снижение надежности)'
+                          : '(Профицит / Ресурс в норме)'}
+                      </span>
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold border border-slate-700">
+                      Вход: {testResult.energy_diagnostics.energyIn.toFixed(1)}/20
+                    </span>
+                    <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-bold border border-slate-700">
+                      Расход: {testResult.energy_diagnostics.energyOut.toFixed(1)}/20
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-3 text-xs text-slate-300">
+                  <p className="mb-2">
+                    <strong>Ведущий кластер дефицита:</strong> Кластер {testResult.energy_diagnostics.dominantCluster} ({testResult.energy_diagnostics.clusterNameRu})
+                  </p>
+                  {testResult.energy_diagnostics.protocol && (
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                      <div className="text-amber-300 font-bold mb-1">
+                        Протокол: {testResult.energy_diagnostics.protocol.title} ({testResult.energy_diagnostics.protocol.source})
+                      </div>
+                      <p className="text-[11px] text-slate-400 mb-2">
+                        Мишень: {testResult.energy_diagnostics.protocol.scientificBasis}
+                      </p>
+                      <div className="space-y-1 text-[11px] text-slate-300">
+                        {testResult.energy_diagnostics.protocol.actionSteps.map((step, idx) => (
+                          <div key={idx} className="flex items-start gap-1.5">
+                            <span className="text-amber-400">•</span>
+                            <span>{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Cognitive Hierarchy Section */}
             <div className="mt-8 pt-6 border-t border-slate-800">

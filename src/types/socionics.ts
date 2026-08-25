@@ -62,6 +62,49 @@ export interface FunctionWeights {
 export type ScreenWeightMap = Record<OptionKey, FunctionWeights>;
 export type DiagnosticWeightMap = Record<number, ScreenWeightMap>;
 
+export type EnergyCluster = 'A' | 'B' | 'C' | 'D' | 'E';
+
+export interface EnergyScreen {
+  id: number;
+  title: Record<Language, string>;
+  situation: Record<Language, string>;
+  question: Record<Language, string>;
+  options: Record<OptionKey, Record<Language, string>>;
+}
+
+export interface EnergyWeights {
+  clusterA: number; // Vitality / Surplus
+  clusterB: number; // Balanced / Baseline
+  clusterC: number; // Burnout / Exhaustion
+  clusterD: number; // Hyperarousal / Panic
+  clusterE: number; // Hypoarousal / Apathy
+  energyIn: number; // Generation / Input
+  energyOut: number; // Drain / Dissipation
+}
+
+export interface RecoveryProtocol {
+  title: string;
+  source: string; // Huberman, McKeown, Rosenberg, Nagoski, Fogg, Levine
+  scientificBasis: string;
+  duration: string;
+  actionSteps: string[];
+  cheatCode: string;
+}
+
+export interface EnergyDiagnosticsResult {
+  kpd: number;
+  dominantCluster: EnergyCluster;
+  clusterNameRu: string;
+  clusterNameEn: string;
+  clusterDescriptionRu: string;
+  clusterDescriptionEn: string;
+  energyIn: number;
+  energyOut: number;
+  reliability_flag: boolean; // true if kpd >= 1.0, false if kpd < 1.0
+  scenario: 'A' | 'B'; // A = normal/high (KPD >= 1.0), B = depleted (KPD < 1.0)
+  protocol?: RecoveryProtocol;
+}
+
 export interface SocionicsContradiction {
   pair: [number, number];
   severity: 'low' | 'medium' | 'high';
@@ -74,6 +117,8 @@ export interface SocionicsTestResult {
   profileName?: string;
   completedAt: string;
   answers: Record<number, OptionKey>;
+  energyAnswers?: Record<number, OptionKey>;
+  energy_diagnostics?: EnergyDiagnosticsResult;
   sociotype: {
     primary: SociotypeCode;
     secondary: SociotypeCode;
@@ -104,6 +149,7 @@ export interface SocionicsTestResult {
     consistency_score: number;
     contradictions: SocionicsContradiction[];
     social_desirability_bias: 'low' | 'moderate' | 'high';
+    reliability_flag: boolean;
   };
   cognitive_profile: {
     functions: Record<CognitiveFunction, number>;
@@ -176,6 +222,9 @@ export interface IntegrativeAnalysisReport {
     bottleneck: string;
     growthDirection: string;
   };
+
+  // Energy Gatekeeper & Physiological Diagnostics
+  energy_diagnostics?: EnergyDiagnosticsResult;
 
   confidenceScore: number;
   language: Language;
