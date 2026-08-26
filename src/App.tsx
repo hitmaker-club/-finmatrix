@@ -27,7 +27,7 @@ import { PwaInstallBanner } from './components/PwaInstallBanner.js';
 import { SocionicsTestView } from './components/SocionicsTestView.js';
 import { ResourceStateView } from './components/ResourceStateView.js';
 import { IntegrativeAnalysisView } from './components/IntegrativeAnalysisView.js';
-import { SocionicsTestResult, FullIntegrativeAnalysisRecord } from './types/socionics.js';
+import { SocionicsTestResult, FullIntegrativeAnalysisRecord, EnergyEvaluationRecord } from './types/socionics.js';
 import { useI18n } from './i18n/context.js';
 
 export function App() {
@@ -45,6 +45,9 @@ export function App() {
   const [isGeneratingIntegrative, setIsGeneratingIntegrative] = useState(false);
   
   const [history, setHistory] = useState<DiagnosticAnalysisRecord[]>([]);
+  const [socionicsHistory, setSocionicsHistory] = useState<SocionicsTestResult[]>([]);
+  const [energyHistory, setEnergyHistory] = useState<EnergyEvaluationRecord[]>([]);
+  const [integrativeHistory, setIntegrativeHistory] = useState<FullIntegrativeAnalysisRecord[]>([]);
   const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
   const [modules, setModules] = useState<DiagnosticModuleMeta[]>([]);
 
@@ -60,16 +63,19 @@ export function App() {
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  // Initialize Session & Data
+  // Initialize Session & Data across all modules
   const initializeApp = async () => {
     try {
       setErrorMessage(null);
-      const [meRes, profRes, histRes, refRes, modRes] = await Promise.all([
-        api.getMe(),
-        api.getProfiles(),
-        api.getHistory(),
-        api.getReferralStats(),
-        api.getModules(),
+      const [meRes, profRes, histRes, socHistRes, energyHistRes, integHistRes, refRes, modRes] = await Promise.all([
+        api.getMe().catch(() => ({ account: null, subscription: null })),
+        api.getProfiles().catch(() => ({ profiles: [] })),
+        api.getHistory().catch(() => ({ history: [] })),
+        api.getSocionicsHistory().catch(() => ({ history: [] })),
+        api.getEnergyHistory().catch(() => ({ history: [] })),
+        api.getIntegrativeHistory().catch(() => ({ history: [] })),
+        api.getReferralStats().catch(() => ({ stats: null })),
+        api.getModules().catch(() => ({ modules: [] })),
       ]);
 
       if (meRes.account) {
@@ -83,6 +89,9 @@ export function App() {
 
       setProfiles(profRes.profiles || []);
       setHistory(histRes.history || []);
+      setSocionicsHistory(socHistRes.history || []);
+      setEnergyHistory(energyHistRes.history || []);
+      setIntegrativeHistory(integHistRes.history || []);
       setReferralStats(refRes.stats);
       setModules(modRes.modules || []);
 
@@ -288,7 +297,7 @@ export function App() {
     }
   };
 
-  // History delete
+  // History delete handlers
   const handleDeleteHistoryItem = async (id: string) => {
     try {
       await api.deleteHistoryItem(id);
@@ -301,11 +310,74 @@ export function App() {
     }
   };
 
-  // Select History Record
+  const handleDeleteSocionicsItem = async (id: string) => {
+    try {
+      await api.deleteSocionicsResult(id);
+      setSocionicsHistory((prev) => prev.filter((h) => h.id !== id));
+      if (currentSocionicsResult?.id === id) {
+        setCurrentSocionicsResult(null);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to delete socionics record.');
+    }
+  };
+
+  const handleDeleteEnergyItem = async (id: string) => {
+    try {
+      await api.deleteEnergyResult(id);
+      setEnergyHistory((prev) => prev.filter((h) => h.id !== id));
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to delete energy record.');
+    }
+  };
+
+  const handleDeleteIntegrativeItem = async (id: string) => {
+    try {
+      await api.deleteIntegrativeResult(id);
+      setIntegrativeHistory((prev) => prev.filter((h) => h.id !== id));
+      if (currentIntegrativeRecord?.id === id) {
+        setCurrentIntegrativeRecord(null);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to delete integrative record.');
+    }
+  };
+
+  // Select History Records across modules
   const handleSelectHistoryRecord = (record: DiagnosticAnalysisRecord) => {
     setCurrentAnalysis(record);
     setCurrentLayer1(record.layer1);
+    if (record.profileId) {
+      const match = profiles.find((p) => p.id === record.profileId);
+      if (match) setSelectedProfile(match);
+    }
     setCurrentTab('diagnostic');
+  };
+
+  const handleSelectSocionicsRecord = (record: SocionicsTestResult) => {
+    setCurrentSocionicsResult(record);
+    if (record.profileId) {
+      const match = profiles.find((p) => p.id === record.profileId);
+      if (match) setSelectedProfile(match);
+    }
+    setCurrentTab('socionics');
+  };
+
+  const handleSelectEnergyRecord = (record: EnergyEvaluationRecord) => {
+    if (record.profileId) {
+      const match = profiles.find((p) => p.id === record.profileId);
+      if (match) setSelectedProfile(match);
+    }
+    setCurrentTab('energy');
+  };
+
+  const handleSelectIntegrativeRecord = (record: FullIntegrativeAnalysisRecord) => {
+    setCurrentIntegrativeRecord(record);
+    if (record.profileId) {
+      const match = profiles.find((p) => p.id === record.profileId);
+      if (match) setSelectedProfile(match);
+    }
+    setCurrentTab('integrative');
   };
 
   if (isInitialLoading) {
@@ -434,12 +506,23 @@ export function App() {
           )
         )}
 
-        {/* Tab 3: History */}
+        {/* Tab 3: Unified Diagnostic History for All Test Modules */}
         {currentTab === 'history' && (
           <HistoryDrawer
             history={history}
+            socionicsHistory={socionicsHistory}
+            energyHistory={energyHistory}
+            integrativeHistory={integrativeHistory}
+            profiles={profiles}
             onSelectRecord={handleSelectHistoryRecord}
+            onSelectSocionicsRecord={handleSelectSocionicsRecord}
+            onSelectEnergyRecord={handleSelectEnergyRecord}
+            onSelectIntegrativeRecord={handleSelectIntegrativeRecord}
             onDeleteRecord={handleDeleteHistoryItem}
+            onDeleteSocionicsRecord={handleDeleteSocionicsItem}
+            onDeleteEnergyRecord={handleDeleteEnergyItem}
+            onDeleteIntegrativeRecord={handleDeleteIntegrativeItem}
+            onNavigateToTab={(tab) => setCurrentTab(tab)}
           />
         )}
 
@@ -480,6 +563,8 @@ export function App() {
             onSelectProfile={(p) => setSelectedProfile(p)}
             onNavigateToSocionics={() => setCurrentTab('socionics')}
             onNavigateToMatrix={() => setCurrentTab('diagnostic')}
+            account={account}
+            onOpenAuthModal={handleOpenAuthModal}
           />
         )}
 
@@ -503,6 +588,9 @@ export function App() {
               onSelectProfile={(p) => setSelectedProfile(p)}
               onOpenIntegrativeReport={handleOpenIntegrativeReport}
               onNavigateToMatrix={() => setCurrentTab('diagnostic')}
+              onNavigateToEnergy={() => setCurrentTab('energy')}
+              account={account}
+              onOpenAuthModal={handleOpenAuthModal}
             />
           </div>
         )}

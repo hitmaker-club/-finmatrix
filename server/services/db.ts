@@ -137,6 +137,7 @@ class DatabaseStore {
   public referrals: Map<string, Referral> = new Map();
   public analyses: Map<string, DiagnosticAnalysisRecord> = new Map();
   public socionicsResults: Map<string, any> = new Map();
+  public energyResults: Map<string, any> = new Map();
   public integrativeReports: Map<string, any> = new Map();
   public modules: Map<string, DiagnosticModuleMeta> = new Map();
   public fieldConfigs: Map<string, FormFieldConfig> = new Map();

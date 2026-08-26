@@ -27,17 +27,19 @@ import {
   Award,
   ChevronRight,
   RotateCcw,
+  Lock,
 } from 'lucide-react';
 import { useI18n } from '../i18n/context.js';
 import { Language } from '../i18n/types.js';
 import { api } from '../services/api.js';
-import { PersonProfile } from '../types/domain.js';
+import { PersonProfile, Account } from '../types/domain.js';
 import {
   EnergyScreen,
   EnergyDiagnosticsResult,
   OptionKey,
   EnergyCluster,
 } from '../types/socionics.js';
+import { AuthRequiredBanner } from './AuthRequiredBanner.js';
 
 interface ResourceStateViewProps {
   activeProfile: PersonProfile | null;
@@ -45,6 +47,8 @@ interface ResourceStateViewProps {
   onSelectProfile: (profile: PersonProfile) => void;
   onNavigateToSocionics: (energyAnswers?: Record<number, OptionKey>) => void;
   onNavigateToMatrix: () => void;
+  account?: Account | null;
+  onOpenAuthModal?: (mode?: 'login' | 'register') => void;
 }
 
 const CLUSTER_BADGE_COLORS: Record<EnergyCluster, { bg: string; border: string; text: string; ring: string }> = {
@@ -61,6 +65,8 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
   onSelectProfile,
   onNavigateToSocionics,
   onNavigateToMatrix,
+  account,
+  onOpenAuthModal,
 }) => {
   const { t, language } = useI18n();
   const [screens, setScreens] = useState<EnergyScreen[]>([]);
@@ -92,6 +98,10 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
   const currentScreen = screens[currentIndex];
 
   const handleSelectOption = (key: OptionKey) => {
+    if (!account) {
+      if (onOpenAuthModal) onOpenAuthModal('register');
+      return;
+    }
     if (!currentScreen) return;
     const newAnswers = { ...answers, [currentScreen.id]: key };
     setAnswers(newAnswers);
@@ -103,6 +113,11 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
   };
 
   const handleCalculateEnergy = async () => {
+    if (!account) {
+      if (onOpenAuthModal) onOpenAuthModal('register');
+      return;
+    }
+
     if (answeredCount < totalScreens) {
       if (!confirm(`Вы ответили на ${answeredCount} из ${totalScreens} вопросов. Рассчитать предварительный КПД?`)) {
         return;
@@ -125,7 +140,11 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 4000);
     } catch (err: any) {
-      alert(`Ошибка оценки ресурсного состояния: ${err?.message || 'Неизвестная ошибка'}`);
+      if (err?.requiresAuth && onOpenAuthModal) {
+        onOpenAuthModal('login');
+      } else {
+        alert(`Ошибка оценки ресурсного состояния: ${err?.message || 'Неизвестная ошибка'}`);
+      }
     } finally {
       setEvaluating(false);
     }
@@ -152,27 +171,42 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
         <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-slate-400 font-semibold">Загрузка диагностических экранов энергоэффективности...</p>
+        <p className="text-slate-400 font-semibold">
+          {language === 'en'
+            ? 'Preparing resource and efficiency test...'
+            : language === 'es'
+            ? 'Preparando test de vitalidad y recursos...'
+            : 'Подготовка вопросов теста ресурсности...'}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-6 py-8">
+      {/* Authentication Required Banner if not logged in */}
+      {!account && (
+        <AuthRequiredBanner
+          onOpenAuthModal={onOpenAuthModal || (() => {})}
+          moduleName={t.energy?.title || 'Диагностика энергоэффективности'}
+          className="mb-6"
+        />
+      )}
+
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-cyan-950 via-slate-900 to-indigo-950 border border-cyan-500/30 p-6 sm:p-8 mb-8 shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-3">
               <Zap className="w-3.5 h-3.5 text-cyan-400" />
-              <span>{t.energy?.badge || 'GATEKEEPER: ДИАГНОСТИКА РЕСУРСНОГО СОСТОЯНИЯ'}</span>
+              <span>{t.energy?.badge || 'ПРОВЕРКА УРОВНЯ ЭНЕРГИИ И ГОТОВНОСТИ'}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              {t.energy?.title || 'Определение психофизиологического ресурса и КПД'}
+              {t.energy?.title || 'Тест на запас сил и личную продуктивность (КПД)'}
             </h1>
             <p className="mt-2 text-sm text-slate-300 max-w-2xl leading-relaxed">
               {t.energy?.subtitle ||
-                '7 точных поведенческих маркеров для оценки витального тонуса, уровня нервного истощения, баланса расхода сил и персонализированных протоколов нейрорегуляции.'}
+                '7 простых вопросов о вашем самочувствии, сне и фокусе. Поможет узнать, полны ли вы сил для новых целей или телу требуется короткая перезагрузка.'}
             </p>
           </div>
 
@@ -206,7 +240,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                 className="px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
-                <span>{t.common?.refresh || 'Перепройти'}</span>
+                <span>{t.energy?.retakeBtn || 'Пройти тест заново'}</span>
               </button>
             )}
           </div>
@@ -226,7 +260,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                 result.kpd >= 1.0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
               }`}>
                 <Activity className="w-3.5 h-3.5" />
-                <span>КПД: {result.kpd} ({result.scenario === 'A' ? 'Сценарий A' : 'Сценарий B'})</span>
+                <span>КПД: {result.kpd} ({result.scenario === 'A' ? (t.energy?.scenarioSurplus || 'Профицит сил') : (t.energy?.scenarioDeficit || 'Дефицит сил')})</span>
               </span>
             ) : null}
           </div>
@@ -241,10 +275,10 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm">
             <div className="flex items-center justify-between text-xs font-bold mb-2">
               <span className="text-slate-300">
-                {t.energy?.stepProgress || 'Маркер'} {currentIndex + 1} / {totalScreens}
+                {t.energy?.stepProgress || 'Вопрос'} {currentIndex + 1} / {totalScreens}
               </span>
               <span className="text-cyan-400">
-                {answeredCount} {language === 'en' ? 'answered' : 'отвечено'} ({progressPercent}%)
+                {answeredCount} {t.energy?.answered || 'отвечено'} ({progressPercent}%)
               </span>
             </div>
             <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
@@ -272,7 +306,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                         : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                     }`}
                   >
-                    <span>Э-{idx + 1}</span>
+                    <span>№{idx + 1}</span>
                     {isAnswered && <CheckCircle className="w-3 h-3 text-emerald-400" />}
                   </button>
                 );
@@ -280,20 +314,39 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
             </div>
           </div>
 
+          {/* Instruction for user */}
+          <div className="bg-slate-900/70 border border-cyan-900/40 rounded-2xl p-4 sm:p-5 flex items-start sm:items-center gap-3.5 shadow-sm">
+            <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center shrink-0 text-cyan-400">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <span className="font-bold text-cyan-300">
+                {language === 'ru' ? 'Инструкция:' : language === 'es' ? 'Instrucción:' : 'Instruction:'}{' '}
+              </span>
+              {t.energy?.userInstruction ||
+                (language === 'ru'
+                  ? 'Ответьте, опираясь на ваше состояние за последние 3–5 дней. Здесь нет правильных ответов, есть только факты.'
+                  : language === 'es'
+                  ? 'Responde según tu estado en los últimos 3–5 días. No hay respuestas correctas o incorrectas, solo hechos.'
+                  : 'Answer based on your state over the last 3–5 days. There are no right or wrong answers, only facts.')}
+            </p>
+          </div>
+
           {/* Current Question Card */}
           {currentScreen && (
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <span className="px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/60 text-xs font-extrabold uppercase tracking-wider">
-                  Психофизиологический маркер #{currentScreen.id}
+                  {t.energy?.markerPrefix || 'Показатель'} #{currentScreen.id}
                 </span>
                 <span className="text-xs font-bold text-slate-400 bg-slate-800/80 px-3 py-1 rounded-full border border-slate-700">
-                  {currentScreen.id === 1 ? 'Утренний тонус' :
-                   currentScreen.id === 2 ? 'Стресс-реакция' :
-                   currentScreen.id === 3 ? 'Устойчивость фокуса' :
-                   currentScreen.id === 4 ? 'Информационный шум' :
-                   currentScreen.id === 5 ? 'Архитектура сна' :
-                   currentScreen.id === 6 ? 'Отношение к деньгам' : 'Восстановление'}
+                  {currentScreen.id === 1 ? (t.energy?.markerCategories?.morningTone || 'Утренний старт') :
+                   currentScreen.id === 2 ? (t.energy?.markerCategories?.stressResponse || 'Внезапное препятствие') :
+                   currentScreen.id === 3 ? (t.energy?.markerCategories?.focusStability || 'Паттерн-интеррапт') :
+                   currentScreen.id === 4 ? (t.energy?.markerCategories?.infoNoise || 'Расход последнего ресурса') :
+                   currentScreen.id === 5 ? (t.energy?.markerCategories?.sleepArchitecture || 'Социальное трение') :
+                   currentScreen.id === 6 ? (t.energy?.markerCategories?.moneyReflex || 'Соматический маркер') :
+                   (t.energy?.markerCategories?.recoveryPower || 'Горизонт планирования')}
                 </span>
               </div>
 
@@ -305,7 +358,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
               {/* Situation Box */}
               <div className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-4 sm:p-5 mb-5">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Ситуационный контекст:
+                  {t.energy?.situationLabel || 'Жизненная ситуация:'}
                 </p>
                 <p className="text-base text-slate-200 leading-relaxed font-normal">
                   {getScreenText(currentScreen).situation}
@@ -358,42 +411,55 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
               </div>
 
               {/* Navigation Controls */}
-              <div className="mt-8 pt-6 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div className="mt-8 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
                   disabled={currentIndex === 0}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-30 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 disabled:opacity-30 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  <span>{t.common?.cancel || 'Назад'}</span>
+                  <span>{t.energy?.prevMarker || '← Назад'}</span>
                 </button>
 
-                <div className="flex items-center gap-3">
-                  {currentIndex < totalScreens - 1 ? (
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  {currentIndex < totalScreens - 1 && (
                     <button
                       type="button"
                       onClick={() => setCurrentIndex(currentIndex + 1)}
-                      className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-700"
+                      className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-slate-700"
                     >
-                      <span>Следующий вопрос</span>
+                      <span>{t.energy?.nextMarker || 'Следующий вопрос'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
-                  ) : null}
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={handleCalculateEnergy}
-                    disabled={evaluating || answeredCount === 0}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 via-cyan-500 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-lg shadow-cyan-600/30 transition-all cursor-pointer disabled:opacity-40"
-                  >
-                    {evaluating ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                  {(currentIndex === totalScreens - 1 || answeredCount === totalScreens) && (
+                    account ? (
+                      <button
+                        type="button"
+                        onClick={handleCalculateEnergy}
+                        disabled={evaluating || answeredCount === 0}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 via-cyan-500 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-cyan-600/30 transition-all cursor-pointer disabled:opacity-40"
+                      >
+                        {evaluating ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Zap className="w-4 h-4 text-cyan-200" />
+                        )}
+                        <span>{t.energy?.btnCalculate || 'Рассчитать ресурсность и КПД'}</span>
+                      </button>
                     ) : (
-                      <Zap className="w-4 h-4 text-cyan-200" />
-                    )}
-                    <span>{t.energy?.btnCalculate || 'Рассчитать КПД и протокол'}</span>
-                  </button>
+                      <button
+                        type="button"
+                        onClick={() => onOpenAuthModal && onOpenAuthModal('register')}
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 via-orange-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 transition-all cursor-pointer"
+                      >
+                        <Lock className="w-4 h-4 text-amber-200" />
+                        <span>{t.auth?.authRequiredLockBtn || 'Войдите для расчета'}</span>
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             </div>
@@ -409,26 +475,26 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                    Энергоэффективность
+                    {t.energy?.kpdScoreTitle || 'Энергоэффективность (КПД)'}
                   </span>
                   <Activity className="w-4 h-4 text-cyan-400" />
                 </div>
                 <div className="flex items-baseline gap-2 mb-2">
                   <span className="text-4xl font-black text-white">{result.kpd}</span>
-                  <span className="text-xs font-bold text-slate-400">КПД (In/Out)</span>
+                  <span className="text-xs font-bold text-slate-400">{t.energy?.kpdRatioLabel || 'Баланс (Приток / Расход)'}</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {result.kpd >= 1.0
-                    ? 'Генерация энергии превышает расход. Высокая соматическая устойчивость.'
-                    : 'Расход энергии превышает приток. Накопление дефицита и скрытого стресса.'}
+                    ? (t.energy?.highKpdDesc || 'Отличный результат! Вы полны сил и восстанавливаетесь быстрее, чем устаете.')
+                    : (t.energy?.lowKpdDesc || 'Запас сил снижен: расход энергии опережает её восполнение.')}
                 </p>
               </div>
 
               {/* Energy Balance Bar */}
               <div className="mt-4 pt-4 border-t border-slate-800/80 space-y-2">
                 <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-emerald-400">Генерация (In): {result.energyIn}</span>
-                  <span className="text-rose-400">Рассеивание (Out): {result.energyOut}</span>
+                  <span className="text-emerald-400">{t.energy?.energyInLabel || 'Приток сил'}: {result.energyIn}</span>
+                  <span className="text-rose-400">{t.energy?.energyOutLabel || 'Расход сил'}: {result.energyOut}</span>
                 </div>
                 <div className="w-full bg-slate-800 rounded-full h-2 flex overflow-hidden">
                   <div
@@ -448,10 +514,10 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                    Доминирующий кластер
+                    {t.energy?.dominantClusterTitle || 'Главный источник усталости'}
                   </span>
                   <span className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase ${CLUSTER_BADGE_COLORS[result.dominantCluster]?.text}`}>
-                    Кластер {result.dominantCluster}
+                    {t.energy?.dominantClusterLabel || 'Кластер'} {result.dominantCluster}
                   </span>
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2 leading-tight">
@@ -464,7 +530,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
 
               <div className="mt-4 pt-4 border-t border-slate-800/60 flex items-center gap-2 text-xs font-bold text-slate-300">
                 <Brain className="w-4 h-4 text-cyan-400" />
-                <span>Нейрогуморальный статус: {result.dominantCluster === 'A' || result.dominantCluster === 'B' ? 'Вентральный вагус / Оптимум' : result.dominantCluster === 'D' ? 'Симпатическая перегрузка' : result.dominantCluster === 'C' ? 'Дофаминовый дефицит' : 'Дорсальное оцепенение'}</span>
+                <span>{t.energy?.neuroStatusLabel || 'Нейрогуморальный статус:'} {result.dominantCluster === 'A' || result.dominantCluster === 'B' ? 'Вентральный вагус / Оптимум' : result.dominantCluster === 'D' ? 'Симпатическая перегрузка' : result.dominantCluster === 'C' ? 'Дофаминовый дефицит' : 'Дорсальное оцепенение'}</span>
               </div>
             </div>
 
@@ -473,7 +539,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
-                    Статус Gatekeeper
+                    {t.energy?.gatekeeperTitle || 'Рекомендация по решениям'}
                   </span>
                   <Shield className={`w-4 h-4 ${result.kpd >= 1.0 ? 'text-emerald-400' : 'text-amber-400'}`} />
                 </div>
@@ -481,20 +547,20 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                   <span className={`px-2.5 py-1 rounded-xl text-xs font-black tracking-wider uppercase ${
                     result.kpd >= 1.0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                   }`}>
-                    {result.scenario === 'A' ? 'СЦЕНАРИЙ А: ПРОФИЦИТ' : 'СЦЕНАРИЙ B: ДЕФИЦИТ'}
+                    {result.scenario === 'A' ? (t.energy?.scenarioSurplus || 'ЭНЕРГИИ ДОСТАТОЧНО (ПРОФИЦИТ)') : (t.energy?.scenarioDeficit || 'НУЖНА ПЕРЕЗАРЯДКА (ДЕФИЦИТ)')}
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {result.scenario === 'A'
-                    ? 'Тестирование соционического типа и принятие финансовых решений валидны без ограничений.'
-                    : 'Активирован протокол соматического восстановления. Рекомендуется сначала стабилизировать физиологию перед крупными инвестициями.'}
+                    ? (t.energy?.scenarioSurplusDesc || 'Вы в отличной форме. Все тесты личности и финансовые решения будут максимально объективными.')
+                    : (t.energy?.scenarioDeficitDesc || 'Сейчас мозг экономит ресурсы. Рекомендуем уделить 1-2 дня простому отдыху.')}
                 </p>
               </div>
 
               <div className="mt-4 pt-4 border-t border-slate-800/60">
                 <span className={`text-[11px] font-bold flex items-center gap-1.5 ${result.kpd >= 1.0 ? 'text-emerald-400' : 'text-amber-400'}`}>
                   {result.kpd >= 1.0 ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-                  <span>{result.kpd >= 1.0 ? 'Готов к трансформационным шагам' : 'Требуется соматическая перезагрузка'}</span>
+                  <span>{result.kpd >= 1.0 ? (t.energy?.readyForAction || 'Высокая ясность ума и готовность к целям') : (t.energy?.needsRecharge || 'Требуется восполнение сил перед важными решениями')}</span>
                 </span>
               </div>
             </div>
@@ -507,7 +573,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                 <div className="space-y-1">
                   <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 text-[11px] font-bold uppercase tracking-wider border border-cyan-500/30">
                     <Heart className="w-3 h-3 text-cyan-400" />
-                    <span>Научно обоснованный соматический протокол</span>
+                    <span>{t.energy?.protocolBadge || 'Персональный план быстрой перезагрузки'}</span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white">
                     {result.protocol.title}
@@ -515,7 +581,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                 </div>
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800 shrink-0">
                   <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>Режим: {result.protocol.duration}</span>
+                  <span>{t.energy?.durationLabel || 'Время эффекта:'} {result.protocol.duration}</span>
                 </div>
               </div>
 
@@ -524,7 +590,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                 <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80">
                   <div className="flex items-center gap-2 text-xs font-extrabold text-cyan-400 mb-1">
                     <BookOpen className="w-3.5 h-3.5" />
-                    <span>Научный базис и первоисточники:</span>
+                    <span>{t.energy?.sourcesTitle || 'На чём основаны советы:'}</span>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     {result.protocol.source}
@@ -534,7 +600,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                 <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80">
                   <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-400 mb-1">
                     <Wind className="w-3.5 h-3.5" />
-                    <span>Физиологический механизм действия:</span>
+                    <span>{t.energy?.mechanismTitle || 'Как это работает для вашего тела:'}</span>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     {result.protocol.scientificBasis}
@@ -546,7 +612,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
               <div className="space-y-3 pt-2">
                 <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-2">
                   <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Пошаговые действия для активации ресурса:</span>
+                  <span>{t.energy?.actionStepsTitle || 'Простые действия для возвращения бодрости:'}</span>
                 </h4>
                 <div className="space-y-2.5">
                   {result.protocol.actionSteps.map((step, idx) => (
@@ -570,7 +636,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                 <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-cyan-950/60 via-slate-950 to-indigo-950/60 border border-cyan-500/40 shadow-inner">
                   <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-cyan-300 mb-1.5">
                     <Sparkles className="w-4 h-4 text-cyan-400" />
-                    <span>Экспресс-читкод (мгновенный сброс стресса за 90 секунд):</span>
+                    <span>{t.energy?.expressCheatCodeTitle || 'Экспресс-приём для снятия усталости за 90 секунд:'}</span>
                   </div>
                   <p className="text-xs sm:text-sm font-semibold text-slate-100 leading-relaxed">
                     {result.protocol.cheatCode}
@@ -588,7 +654,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
               className="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
             >
               <RotateCcw className="w-4 h-4 text-cyan-400" />
-              <span>Перепройти тест ресурсности</span>
+              <span>{t.energy?.retakeBtn || 'Пройти тест энергии заново'}</span>
             </button>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -597,7 +663,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                 onClick={onNavigateToMatrix}
                 className="px-5 py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer border border-slate-700"
               >
-                <span>Финансовая матрица</span>
+                <span>{t.energy?.goToMatrixBtn || 'Перейти к финансовой матрице'}</span>
               </button>
 
               <button
@@ -605,7 +671,7 @@ export const ResourceStateView: React.FC<ResourceStateViewProps> = ({
                 onClick={() => onNavigateToSocionics(answers)}
                 className="px-6 py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
-                <span>Перейти к соционике (с учетом КПД)</span>
+                <span>{t.energy?.goToSocionicsBtn || 'Узнать свой тип личности (с учётом энергии)'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

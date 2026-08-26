@@ -24,16 +24,18 @@ import {
   CheckCircle2,
   Clock,
   Calculator,
+  Zap,
 } from 'lucide-react';
 import { useI18n } from '../i18n/context.js';
 import { Language } from '../i18n/types.js';
 import { api } from '../services/api.js';
-import { PersonProfile, DiagnosticAnalysisRecord } from '../types/domain.js';
+import { PersonProfile, DiagnosticAnalysisRecord, Account } from '../types/domain.js';
 import {
   SocionicsScreen,
   SocionicsTestResult,
   OptionKey,
 } from '../types/socionics.js';
+import { AuthRequiredBanner } from './AuthRequiredBanner.js';
 
 interface SocionicsTestViewProps {
   activeProfile: PersonProfile | null;
@@ -43,6 +45,9 @@ interface SocionicsTestViewProps {
   onSelectProfile: (profile: PersonProfile) => void;
   onOpenIntegrativeReport: (socResult: SocionicsTestResult) => void;
   onNavigateToMatrix: () => void;
+  onNavigateToEnergy?: () => void;
+  account?: Account | null;
+  onOpenAuthModal?: (mode?: 'login' | 'register') => void;
 }
 
 const FUNCTION_FRIENDLY_NAMES: Record<string, { ru: string; en: string; es: string }> = {
@@ -64,6 +69,9 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
   onSelectProfile,
   onOpenIntegrativeReport,
   onNavigateToMatrix,
+  onNavigateToEnergy,
+  account,
+  onOpenAuthModal,
 }) => {
   const { t, language } = useI18n();
   const [screens, setScreens] = useState<SocionicsScreen[]>([]);
@@ -129,20 +137,29 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
 
   // Load screens on mount
   useEffect(() => {
+    let isMounted = true;
     async function loadData() {
       setLoadingScreens(true);
       try {
-        const { screens: data } = await api.getSocionicsScreens();
-        setScreens(data || []);
-        const { history: sHist } = await api.getSocionicsHistory();
-        setTestHistory(sHist || []);
+        const screensPromise = api.getSocionicsScreens().catch(() => ({ screens: [] }));
+        const historyPromise = api.getSocionicsHistory().catch(() => ({ history: [] }));
+        const [screensRes, historyRes] = await Promise.all([screensPromise, historyPromise]);
+        if (isMounted) {
+          setScreens(screensRes.screens || []);
+          setTestHistory(historyRes.history || []);
+        }
       } catch (err) {
-        console.error('Failed to load socionics data:', err);
+        console.warn('Notice loading socionics data:', err);
       } finally {
-        setLoadingScreens(false);
+        if (isMounted) {
+          setLoadingScreens(false);
+        }
       }
     }
     loadData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const totalScreens = screens.length || 30;
@@ -151,6 +168,10 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
   const currentScreen = screens[currentIndex];
 
   const handleSelectOption = (key: OptionKey) => {
+    if (!account) {
+      if (onOpenAuthModal) onOpenAuthModal('register');
+      return;
+    }
     if (!currentScreen) return;
     const newAnswers = { ...answers, [currentScreen.id]: key };
     setAnswers(newAnswers);
@@ -162,6 +183,11 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
   };
 
   const handleFinishTest = async () => {
+    if (!account) {
+      if (onOpenAuthModal) onOpenAuthModal('register');
+      return;
+    }
+
     if (answeredCount < totalScreens) {
       if (!confirm(`Вы ответили на ${answeredCount} из ${totalScreens} вопросов. Хотите завершить расчет?`)) {
         return;
@@ -181,7 +207,11 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
       setTestResult(result);
       setTestHistory((prev) => [result, ...prev]);
     } catch (err: any) {
-      alert(`Ошибка расчета соционического профиля: ${err?.message || 'Неизвестная ошибка'}`);
+      if (err?.requiresAuth && onOpenAuthModal) {
+        onOpenAuthModal('login');
+      } else {
+        alert(`Ошибка расчета соционического профиля: ${err?.message || 'Неизвестная ошибка'}`);
+      }
     } finally {
       setEvaluating(false);
     }
@@ -209,13 +239,28 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
         <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-slate-400 font-semibold">Загрузка соционической батареи тестов...</p>
+        <p className="text-slate-400 font-semibold">
+          {language === 'en'
+            ? 'Preparing personality test questions...'
+            : language === 'es'
+            ? 'Preparando preguntas del test...'
+            : 'Подготовка вопросов теста личности...'}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-6 py-8">
+      {/* Authentication Required Banner if not logged in */}
+      {!account && (
+        <AuthRequiredBanner
+          onOpenAuthModal={onOpenAuthModal || (() => {})}
+          moduleName={t.socionics?.title || 'Соционическая диагностика'}
+          className="mb-6"
+        />
+      )}
+
       {/* Header Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-cyan-950 border border-indigo-500/30 p-6 sm:p-8 mb-8 shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -290,6 +335,34 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Energy Efficiency Prerequisite Motivation Banner */}
+      {onNavigateToEnergy && (
+        <div className="mb-8 rounded-3xl bg-gradient-to-r from-cyan-950/70 via-slate-900 to-indigo-950/70 border border-cyan-500/30 p-5 sm:p-6 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-300 flex items-center justify-center shrink-0 shadow-inner mt-0.5">
+              <Zap className="w-5 h-5 text-cyan-400 animate-pulse" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-base font-bold text-white leading-tight">
+                {t.energy?.motivationBannerTitle || '💡 Рекомендуем начать с теста энергии и продуктивности'}
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+                {t.energy?.motivationBannerSubtitle ||
+                  'Пройдите 2-минутный тест на уровень сил и стресса. Это откалибрует систему и сделает расчет вашего социотипа на 100% точным и объективным!'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onNavigateToEnergy}
+            className="shrink-0 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-cyan-600/20 flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>{t.energy?.motivationBannerBtn || 'Пройти тест энергии за 2 мин'}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       {!testResult ? (
@@ -599,19 +672,30 @@ export const SocionicsTestView: React.FC<SocionicsTestViewProps> = ({
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     ) : (
-                      <button
-                        type="button"
-                        disabled={evaluating || answeredCount === 0}
-                        onClick={handleFinishTest}
-                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-lg cursor-pointer"
-                      >
-                        {evaluating ? (
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <CheckCircle className="w-4 h-4" />
-                        )}
-                        <span>{t.socionics?.finishTest || 'Завершить и узнать результат'}</span>
-                      </button>
+                      account ? (
+                        <button
+                          type="button"
+                          disabled={evaluating || answeredCount === 0}
+                          onClick={handleFinishTest}
+                          className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-lg cursor-pointer"
+                        >
+                          {evaluating ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4" />
+                          )}
+                          <span>{t.socionics?.finishTest || 'Завершить и узнать результат'}</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => onOpenAuthModal && onOpenAuthModal('register')}
+                          className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 via-orange-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-amber-600/30 cursor-pointer"
+                        >
+                          <Lock className="w-4 h-4 text-amber-200" />
+                          <span>{t.auth?.authRequiredLockBtn || 'Войдите для расчета'}</span>
+                        </button>
+                      )
                     )}
                   </div>
                 </div>

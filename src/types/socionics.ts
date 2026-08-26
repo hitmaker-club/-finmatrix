@@ -243,3 +243,14 @@ export interface FullIntegrativeAnalysisRecord {
   durationMs: number;
   status: 'COMPLETED' | 'FAILED';
 }
+
+export interface EnergyEvaluationRecord {
+  id: string;
+  accountId: string;
+  profileId?: string;
+  profileName?: string;
+  completedAt: string;
+  answers: Record<number, OptionKey>;
+  diagnostics: EnergyDiagnosticsResult;
+}
+

@@ -12,6 +12,7 @@ import {
   UserPlus,
   Save,
   Check,
+  Lock,
 } from 'lucide-react';
 import { PersonProfile, Account } from '../types/domain.js';
 import { useI18n } from '../i18n/context.js';
@@ -19,6 +20,7 @@ import { LanguageSelector } from './LanguageSelector.js';
 import { ThemeToggle } from './ThemeToggle.js';
 import { ProfileChangeConfirmModal, FieldChange } from './ProfileChangeConfirmModal.js';
 import { CustomDateSaveModal } from './CustomDateSaveModal.js';
+import { AuthRequiredBanner } from './AuthRequiredBanner.js';
 
 interface FinancialMatrixFormProps {
   profiles: PersonProfile[];
@@ -232,6 +234,16 @@ export const FinancialMatrixForm: React.FC<FinancialMatrixFormProps> = ({
     e.preventDefault();
     setValidationError(null);
 
+    // Enforce Authentication Check
+    if (!account) {
+      setValidationError(
+        t.auth?.authRequiredNotification ||
+          'Для прохождения тестирования и расчета необходимо войти в личный кабинет или зарегистрироваться.'
+      );
+      if (onOpenAuthModal) onOpenAuthModal('register');
+      return;
+    }
+
     const trimmedDob = userBirthDate.trim();
     if (!trimmedDob) {
       setValidationError(t.form?.subjectDobDesc || 'Please specify subject birth date (DD.MM.YYYY)');
@@ -376,6 +388,15 @@ export const FinancialMatrixForm: React.FC<FinancialMatrixFormProps> = ({
           )}
         </div>
       </div>
+
+      {/* Authentication Required Banner if not logged in */}
+      {!account && (
+        <AuthRequiredBanner
+          onOpenAuthModal={onOpenAuthModal || (() => {})}
+          moduleName={t.form?.title || 'Финансовая матрица'}
+          className="mb-6"
+        />
+      )}
 
       {/* Header with Title and Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800">
@@ -574,15 +595,27 @@ export const FinancialMatrixForm: React.FC<FinancialMatrixFormProps> = ({
 
         {/* Single Primary Action Bar */}
         <div className="pt-4 border-t border-slate-800 flex justify-end">
-          <button
-            id="btn-diagnose-main"
-            type="submit"
-            disabled={isDiagnosing || isSavingProfile}
-            className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 shadow-xl shadow-indigo-600/30 transition-all cursor-pointer disabled:opacity-50"
-          >
-            <Sparkles className="w-4 h-4 text-cyan-200 animate-pulse flex-shrink-0" />
-            <span>{isDiagnosing ? t.form.btnDiagnoseLoading : t.form.btnDiagnose}</span>
-          </button>
+          {account ? (
+            <button
+              id="btn-diagnose-main"
+              type="submit"
+              disabled={isDiagnosing || isSavingProfile}
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 shadow-xl shadow-indigo-600/30 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Sparkles className="w-4 h-4 text-cyan-200 animate-pulse flex-shrink-0" />
+              <span>{isDiagnosing ? t.form.btnDiagnoseLoading : t.form.btnDiagnose}</span>
+            </button>
+          ) : (
+            <button
+              id="btn-diagnose-auth-required"
+              type="button"
+              onClick={() => onOpenAuthModal && onOpenAuthModal('register')}
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-600 via-orange-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2.5 shadow-xl shadow-amber-600/30 transition-all cursor-pointer"
+            >
+              <Lock className="w-4 h-4 text-amber-200 flex-shrink-0" />
+              <span>{t.auth?.authRequiredLockBtn || 'Войдите для расчета матрицы'}</span>
+            </button>
+          )}
         </div>
       </form>
 

@@ -24,6 +24,7 @@ import {
   EnergyDiagnosticsResult,
   SocionicsTestResult,
   FullIntegrativeAnalysisRecord,
+  EnergyEvaluationRecord,
   OptionKey,
 } from '../types/socionics.js';
 
@@ -225,10 +226,24 @@ export const api = {
     answers: Record<number, OptionKey>;
     profileId?: string;
     profileName?: string;
-  }): Promise<{ result: { id: string; completedAt: string; profileId?: string; profileName?: string; answers: Record<number, OptionKey>; diagnostics: EnergyDiagnosticsResult } }> {
+  }): Promise<{ result: EnergyEvaluationRecord }> {
     return request('/api/diagnostics/energy/evaluate', {
       method: 'POST',
       body: JSON.stringify(input),
+    });
+  },
+
+  async getEnergyHistory(): Promise<{ history: EnergyEvaluationRecord[] }> {
+    return request('/api/diagnostics/energy/history');
+  },
+
+  async getEnergyResult(id: string): Promise<{ result: EnergyEvaluationRecord }> {
+    return request(`/api/diagnostics/energy/results/${id}`);
+  },
+
+  async deleteEnergyResult(id: string): Promise<{ success: boolean }> {
+    return request(`/api/diagnostics/energy/results/${id}`, {
+      method: 'DELETE',
     });
   },
 
@@ -250,6 +265,12 @@ export const api = {
 
   async getSocionicsResult(id: string): Promise<{ result: SocionicsTestResult }> {
     return request(`/api/diagnostics/socionics/results/${id}`);
+  },
+
+  async deleteSocionicsResult(id: string): Promise<{ success: boolean }> {
+    return request(`/api/diagnostics/socionics/results/${id}`, {
+      method: 'DELETE',
+    });
   },
 
   async runIntegrativeAnalysis(input: {
@@ -275,6 +296,12 @@ export const api = {
 
   async getIntegrativeRecord(id: string): Promise<{ record: FullIntegrativeAnalysisRecord }> {
     return request(`/api/diagnostics/integrative/${id}`);
+  },
+
+  async deleteIntegrativeResult(id: string): Promise<{ success: boolean }> {
+    return request(`/api/diagnostics/integrative/${id}`, {
+      method: 'DELETE',
+    });
   },
 
   // History

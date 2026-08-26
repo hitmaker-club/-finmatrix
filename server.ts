@@ -55,7 +55,10 @@ function authenticate(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const account = getAccountFromToken(authHeader);
   if (!account) {
-    return res.status(401).json({ error: 'Unauthorized: Valid Bearer token required.' });
+    return res.status(401).json({
+      error: 'Для прохождения тестирования и доступа к расчетам необходимо войти в личный кабинет или зарегистрироваться.',
+      requiresAuth: true,
+    });
   }
   (req as any).account = account;
   next();
@@ -283,8 +286,8 @@ app.get('/api/diagnostics/modules', (req: Request, res: Response) => {
   res.json({ modules: DIAGNOSTIC_MODULES_REGISTRY });
 });
 
-// Layer 1 Deterministic Calculation (Fast, Math-only, 0 AI)
-app.post('/api/diagnostics/financial-matrix/calculate', optionalAuthenticate, (req: Request, res: Response) => {
+// Layer 1 Deterministic Calculation (Fast, Math-only, 0 AI) - Requires Auth
+app.post('/api/diagnostics/financial-matrix/calculate', authenticate, (req: Request, res: Response) => {
   const { userBirthDate, motherBirthDate, fatherBirthDate } = req.body;
   if (!userBirthDate) {
     return res.status(400).json({ error: 'User birth date (DD.MM.YYYY or YYYY-MM-DD) is required.' });
@@ -303,8 +306,8 @@ app.post('/api/diagnostics/financial-matrix/calculate', optionalAuthenticate, (r
   }
 });
 
-// Layer 2 AI Synthesis (Cross-analysis with systems theory & behavioral economics)
-app.post('/api/diagnostics/financial-matrix/analyze', optionalAuthenticate, async (req: Request, res: Response) => {
+// Layer 2 AI Synthesis (Cross-analysis with systems theory & behavioral economics) - Requires Auth
+app.post('/api/diagnostics/financial-matrix/analyze', authenticate, async (req: Request, res: Response) => {
   const account = (req as any).account;
   if (account) {
     const accessCheck = canAccess(account, 'RUN_AI_DEEP_DIVE');
@@ -381,7 +384,7 @@ app.post('/api/diagnostics/financial-matrix/analyze', optionalAuthenticate, asyn
   }
 });
 
-// History of runs
+// History of runs - Optional auth (returns empty for guests)
 app.get('/api/diagnostics/history', optionalAuthenticate, (req: Request, res: Response) => {
   const account = (req as any).account;
   if (!account) {
@@ -426,8 +429,8 @@ app.get('/api/diagnostics/energy/screens', (req: Request, res: Response) => {
   res.json({ screens: ENERGY_EFFICIENCY_SCREENS });
 });
 
-// Evaluate stand-alone energy efficiency diagnostics (7 screens)
-app.post('/api/diagnostics/energy/evaluate', optionalAuthenticate, (req: Request, res: Response) => {
+// Evaluate stand-alone energy efficiency diagnostics (7 screens) - Requires Auth
+app.post('/api/diagnostics/energy/evaluate', authenticate, (req: Request, res: Response) => {
   const { answers, profileId, profileName } = req.body;
   if (!answers || typeof answers !== 'object') {
     return res.status(400).json({ error: 'Answers dictionary is required (keys 1..7 with values A..E).' });
@@ -435,16 +438,29 @@ app.post('/api/diagnostics/energy/evaluate', optionalAuthenticate, (req: Request
 
   try {
     const result = evaluateEnergyEfficiency(answers);
+    const account = (req as any).account;
+    let resolvedProfileName = profileName;
+
+    if (profileId && !resolvedProfileName) {
+      const p = db.profiles.get(profileId);
+      if (p) resolvedProfileName = `${p.firstName} ${p.lastName}`.trim();
+    }
+    if (!resolvedProfileName) {
+      resolvedProfileName = account?.name || 'Subject';
+    }
+
     const resultPayload = {
       id: `energy_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      accountId: account?.id || 'guest',
       completedAt: new Date().toISOString(),
       profileId,
-      profileName,
+      profileName: resolvedProfileName,
       answers,
       diagnostics: result,
     };
 
-    const account = (req as any).account;
+    db.energyResults.set(resultPayload.id, resultPayload);
+
     if (account && profileId) {
       const existingProfile = db.profiles.get(profileId);
       if (existingProfile) {
@@ -461,8 +477,41 @@ app.post('/api/diagnostics/energy/evaluate', optionalAuthenticate, (req: Request
   }
 });
 
-// Evaluate submitted answers
-app.post('/api/diagnostics/socionics/evaluate', optionalAuthenticate, (req: Request, res: Response) => {
+// Get saved energy efficiency results history - Optional Auth
+app.get('/api/diagnostics/energy/history', optionalAuthenticate, (req: Request, res: Response) => {
+  const account = (req as any).account;
+  if (!account) {
+    return res.json({ history: [] });
+  }
+  const history = Array.from(db.energyResults.values())
+    .filter((r: any) => r.accountId === account.id || account.role === 'ADMIN')
+    .sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+  res.json({ history });
+});
+
+// Get specific energy result
+app.get('/api/diagnostics/energy/results/:id', authenticate, (req: Request, res: Response) => {
+  const account = (req as any).account;
+  const result = db.energyResults.get(req.params.id);
+  if (!result || (result.accountId !== account.id && account.role !== 'ADMIN')) {
+    return res.status(404).json({ error: 'Energy test result not found.' });
+  }
+  res.json({ result });
+});
+
+// Delete specific energy result
+app.delete('/api/diagnostics/energy/results/:id', authenticate, (req: Request, res: Response) => {
+  const account = (req as any).account;
+  const result = db.energyResults.get(req.params.id);
+  if (!result || (result.accountId !== account.id && account.role !== 'ADMIN')) {
+    return res.status(404).json({ error: 'Energy result not found or access denied.' });
+  }
+  db.energyResults.delete(req.params.id);
+  res.json({ success: true, message: 'Energy result deleted.' });
+});
+
+// Evaluate submitted answers - Requires Auth
+app.post('/api/diagnostics/socionics/evaluate', authenticate, (req: Request, res: Response) => {
   const { answers, energyAnswers, profileId, profileName } = req.body;
   if (!answers || typeof answers !== 'object') {
     return res.status(400).json({ error: 'Answers dictionary is required (keys 1..30 with values A..E).' });
@@ -492,32 +541,44 @@ app.post('/api/diagnostics/socionics/evaluate', optionalAuthenticate, (req: Requ
   }
 });
 
-// Get saved socionics results history
+// Get saved socionics results history - Optional Auth
 app.get('/api/diagnostics/socionics/history', optionalAuthenticate, (req: Request, res: Response) => {
   const account = (req as any).account;
   if (!account) {
     return res.json({ history: [] });
   }
   const history = Array.from(db.socionicsResults.values())
-    .filter((r: any) => r.accountId === account.id)
+    .filter((r: any) => r.accountId === account.id || account.role === 'ADMIN')
     .sort((a: any, b: any) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
   res.json({ history });
 });
 
 // Get specific socionics result
-app.get('/api/diagnostics/socionics/results/:id', optionalAuthenticate, (req: Request, res: Response) => {
+app.get('/api/diagnostics/socionics/results/:id', authenticate, (req: Request, res: Response) => {
+  const account = (req as any).account;
   const result = db.socionicsResults.get(req.params.id);
-  if (!result) {
+  if (!result || (result.accountId !== account.id && account.role !== 'ADMIN')) {
     return res.status(404).json({ error: 'Socionics test result not found.' });
   }
   res.json({ result });
+});
+
+// Delete specific socionics result
+app.delete('/api/diagnostics/socionics/results/:id', authenticate, (req: Request, res: Response) => {
+  const account = (req as any).account;
+  const result = db.socionicsResults.get(req.params.id);
+  if (!result || (result.accountId !== account.id && account.role !== 'ADMIN')) {
+    return res.status(404).json({ error: 'Socionics result not found or access denied.' });
+  }
+  db.socionicsResults.delete(req.params.id);
+  res.json({ success: true, message: 'Socionics result deleted.' });
 });
 
 // ==========================================
 // 3.2 4-LAYER INTEGRATIVE BEHAVIORAL ANALYSIS
 // ==========================================
 
-app.post('/api/diagnostics/integrative/analyze', optionalAuthenticate, async (req: Request, res: Response) => {
+app.post('/api/diagnostics/integrative/analyze', authenticate, async (req: Request, res: Response) => {
   const account = (req as any).account;
   if (account) {
     const accessCheck = canAccess(account, 'RUN_AI_DEEP_DIVE');
@@ -635,23 +696,35 @@ app.post('/api/diagnostics/integrative/analyze', optionalAuthenticate, async (re
   }
 });
 
+// Get saved integrative reports history - Optional Auth
 app.get('/api/diagnostics/integrative/history', optionalAuthenticate, (req: Request, res: Response) => {
   const account = (req as any).account;
   if (!account) {
     return res.json({ history: [] });
   }
   const history = Array.from(db.integrativeReports.values())
-    .filter((r: any) => r.accountId === account.id)
+    .filter((r: any) => r.accountId === account.id || account.role === 'ADMIN')
     .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   res.json({ history });
 });
 
-app.get('/api/diagnostics/integrative/:id', optionalAuthenticate, (req: Request, res: Response) => {
+app.get('/api/diagnostics/integrative/:id', authenticate, (req: Request, res: Response) => {
+  const account = (req as any).account;
   const record = db.integrativeReports.get(req.params.id);
-  if (!record) {
+  if (!record || (record.accountId !== account.id && account.role !== 'ADMIN')) {
     return res.status(404).json({ error: 'Integrative analysis record not found.' });
   }
   res.json({ record });
+});
+
+app.delete('/api/diagnostics/integrative/:id', authenticate, (req: Request, res: Response) => {
+  const account = (req as any).account;
+  const record = db.integrativeReports.get(req.params.id);
+  if (!record || (record.accountId !== account.id && account.role !== 'ADMIN')) {
+    return res.status(404).json({ error: 'Integrative report not found or access denied.' });
+  }
+  db.integrativeReports.delete(req.params.id);
+  res.json({ success: true, message: 'Integrative report deleted.' });
 });
 
 // ==========================================
