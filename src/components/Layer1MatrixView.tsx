@@ -88,11 +88,8 @@ export const Layer1MatrixView: React.FC<Layer1MatrixViewProps> = ({
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className={`text-xs font-extrabold px-2 py-0.5 rounded-md border ${card.badgeBg}`}>
+                  <span className={`text-xs font-extrabold px-2.5 py-1 rounded-md border ${card.badgeBg}`}>
                     {card.code}
-                  </span>
-                  <span className="text-[11px] font-mono text-slate-400 truncate max-w-[130px]" title={card.formula}>
-                    {card.formula}
                   </span>
                 </div>
 

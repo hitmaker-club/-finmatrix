@@ -8,8 +8,6 @@ import {
   Info,
   CheckCircle2,
   Users,
-  LogIn,
-  UserPlus,
   Save,
   Check,
   Lock,
@@ -362,30 +360,7 @@ export const FinancialMatrixForm: React.FC<FinancialMatrixFormProps> = ({
                 </button>
               )}
             </div>
-          ) : (
-            <div className="flex items-center gap-1.5">
-              {onOpenAuthModal && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => onOpenAuthModal('login')}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700 cursor-pointer"
-                  >
-                    <LogIn className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>{t.auth?.login || 'Login'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onOpenAuthModal('register')}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    <span>{t.auth?.register || 'Register'}</span>
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
 

@@ -158,50 +158,58 @@ ${socialRoles.map((r, i) => `${i + 1}. ${r.title}\n- Суть: ${r.essence}\n- �
 
         {/* 4 Connected Layers Baseline Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-6 border-t border-purple-500/20">
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-purple-500/30">
-            <span className="text-[11px] font-bold text-purple-400 block mb-1">
-              {t.integrative?.layer1Socionics || 'Слой 1: Соционика'}
-            </span>
-            <span className="text-sm font-extrabold text-white block">
-              {soc?.sociotype?.primary || 'ЛИЭ'} ({soc?.sociotype?.nameRu || ''})
-            </span>
-            <span className="text-[10px] text-slate-400">
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-purple-500/30 flex flex-col justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-purple-400 block mb-1">
+                {t.integrative?.layer1Socionics || 'Срез 1: Ваш тип личности и мышления'}
+              </span>
+              <span className="text-sm font-extrabold text-white block leading-snug break-words">
+                {soc?.sociotype?.primary || 'ЛИЭ'} ({soc?.sociotype?.nameRu || ''})
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400 block mt-2 leading-relaxed break-words">
               {soc?.quadra?.classic || 'Гамма'} Квадра • {soc?.result_process?.type === 'result' ? 'Результатник' : 'Процессник'}
             </span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-indigo-500/30">
-            <span className="text-[11px] font-bold text-indigo-400 block mb-1">
-              {t.integrative?.layer2Matrix || 'Слой 2: Векторы V1-V4'}
-            </span>
-            <span className="text-sm font-extrabold text-white block">
-              V1={v1} • V2={v2} • V3={v3} • V4={v4}
-            </span>
-            <span className="text-[10px] text-slate-400">
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-indigo-500/30 flex flex-col justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-indigo-400 block mb-1">
+                {t.integrative?.layer2Matrix || 'Срез 2: Финансовая матрица (V1-V4)'}
+              </span>
+              <span className="text-sm font-extrabold text-white block leading-snug font-mono break-words">
+                V1={v1} • V2={v2} • V3={v3} • V4={v4}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400 block mt-2 leading-relaxed break-words">
               {v1Label}
             </span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-cyan-500/30">
-            <span className="text-[11px] font-bold text-cyan-400 block mb-1">
-              {t.integrative?.layer3Analysis || 'Слой 3: Анализ матрицы'}
-            </span>
-            <span className="text-sm font-extrabold text-white block truncate">
-              {record.layer2Matrix?.analyticalPsychology?.primaryArchetype || v1Label}
-            </span>
-            <span className="text-[10px] text-slate-400 truncate block">
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-cyan-500/30 flex flex-col justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-cyan-400 block mb-1">
+                {t.integrative?.layer3Analysis || 'Срез 3: Финансовые привычки и скрытые риски'}
+              </span>
+              <span className="text-sm font-extrabold text-white block leading-snug break-words">
+                {record.layer2Matrix?.analyticalPsychology?.primaryArchetype || v1Label}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400 block mt-2 leading-relaxed break-words">
               {record.layer2Matrix?.mainInternalConflict || record.layer2Matrix?.hookSummary || 'Поведенческий паттерн'}
             </span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-amber-500/30">
-            <span className="text-[11px] font-bold text-amber-400 block mb-1">
-              {t.integrative?.layer4Archetype || 'Слой 4: Архетип дня'}
-            </span>
-            <span className="text-sm font-extrabold text-white block">
-              День {report?.dayNumber || 1}
-            </span>
-            <span className="text-[10px] text-slate-400 truncate block">
+          <div className="p-4 rounded-2xl bg-slate-900/80 border border-amber-500/30 flex flex-col justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-amber-400 block mb-1">
+                {t.integrative?.layer4Archetype || 'Срез 4: Архетип дня рождения и природный драйв'}
+              </span>
+              <span className="text-sm font-extrabold text-white block leading-snug break-words">
+                День {report?.dayNumber || 1}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400 block mt-2 leading-relaxed break-words">
               {report?.dayArchetypeTheme || ''}
             </span>
           </div>
